@@ -1,0 +1,18 @@
+import api from './http';
+
+export async function getQuestion(questionNumber) {
+  const { data } = await api.post(`/game/question/${questionNumber}`);
+  return data; // { questionNumber, text }
+}
+
+export async function submitAnswer(submittedAnswer) {
+  const { data } = await api.post('/game/submit-answer', { submittedAnswer });
+  return data; // { correct, finished, requiresQrScan?, qrForQuestion?, nextHint?, currentQuestion }
+}
+
+export async function resolveQrToken(token) {
+  const { data } = await api.post(`/qr/resolve/${encodeURIComponent(token)}`);
+  return data; // { advanced, finished, currentQuestion }
+}
+
+

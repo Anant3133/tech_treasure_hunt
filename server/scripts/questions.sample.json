@@ -1,0 +1,16 @@
+[
+  {
+    "questionNumber": 1,
+    "text": "I speak without a mouth and hear without ears. What am I?",
+    "answer": "echo",
+    "hint": "Sound repeats."
+  },
+  {
+    "questionNumber": 2,
+    "text": "What has keys but can't open locks?",
+    "answer": "piano",
+    "hint": "Music instrument."
+  }
+]
+
+
