@@ -1,7 +1,11 @@
 node_modules/
 .env/
 .env
+<<<<<<< HEAD
 src/tech-treasure-hunt-55c0d-firebase-adminsdk-fbsvc-14ea327c7d.json
 tech-treasure-hunt-55c0d-firebase-adminsdk-fbsvc-14ea327c7d.json
 tech-treasure-hunt-55c0d-firebase-adminsdk-fbsvc-14ea327c7d.json/
 tech-treasure-hunt-55c0d-firebase-adminsdk-fbsvc-14ea327c7d.json/
+=======
+src/tech-treasure-hunt-55c0d-firebase-adminsdk-fbsvc-14ea327c7d.json
+>>>>>>> 7a58c49093eb92b5ed55d673fb8d581fd9270b7e
