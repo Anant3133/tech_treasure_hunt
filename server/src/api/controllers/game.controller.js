@@ -1,9 +1,11 @@
 const { body, validationResult } = require('express-validator');
+
 const {
   findTeamById,
   getQuestion,
   updateTeamProgress,
 } = require('../services/firestore.service');
+const questionCache = require('../services/questionCache');
 
 async function getQuestionController(req, res) {
   const { teamId } = req.team;
@@ -16,9 +18,13 @@ async function getQuestionController(req, res) {
     return res.status(403).json({ message: 'Forbidden: Not your current question' });
   }
 
-  const question = await getQuestion(questionNumber);
-  if (!question) return res.status(404).json({ message: 'Question not found' });
-
+  // Try cache first
+  let question = questionCache.get(String(questionNumber));
+  if (!question) {
+    question = await getQuestion(questionNumber);
+    if (!question) return res.status(404).json({ message: 'Question not found' });
+    questionCache.set(String(questionNumber), question);
+  }
   return res.json({ questionNumber: question.questionNumber, text: question.text });
 }
 

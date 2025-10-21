@@ -1,9 +1,10 @@
 // DTO shapes as reference (runtime validation will be done via express-validator)
 
 class RegisterTeamDto {
-  constructor({ teamName, password }) {
+  constructor({ teamName, password, members }) {
     this.teamName = teamName;
     this.password = password;
+    this.members = members;
   }
 }
 

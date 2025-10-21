@@ -11,6 +11,12 @@ export default function Login() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminInviteKey, setAdminInviteKey] = useState('');
   const [error, setError] = useState(null);
+  const [members, setMembers] = useState([
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+  ]);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
 
@@ -23,10 +29,20 @@ export default function Login() {
       if (mode === 'login') {
         response = await login(normalizedTeamName, password);
       } else {
-        const registerData = { teamName: normalizedTeamName, password };
+        let registerData = { teamName: normalizedTeamName, password };
         if (isAdminMode) {
           registerData.role = 'admin';
           registerData.adminInviteKey = adminInviteKey;
+        } else {
+          // Only include members with both name and contact filled
+          const filteredMembers = members
+            .map(m => ({ name: m.name.trim(), contact: m.contact.trim() }))
+            .filter(m => m.name && m.contact);
+          if (filteredMembers.length < 2) {
+            setError('At least 2 team members (name and contact) are required');
+            return;
+          }
+          registerData.members = filteredMembers;
         }
         console.log('Registration data being sent:', registerData);
         response = await register(registerData);
@@ -54,7 +70,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-800 p-8 rounded-lg shadow-xl">
         <h2 className="text-2xl font-semibold mb-6 text-white text-center">{mode === 'login' ? 'Login' : 'Register'}</h2>
-        <form className="space-y-4" onSubmit={onSubmit}>
+  <form className="space-y-4" onSubmit={onSubmit}>
           <input 
             value={teamName} 
             onChange={(e) => setTeamName(e.target.value)} 
@@ -71,7 +87,7 @@ export default function Login() {
           
           {mode === 'register' && (
             <div className="space-y-3">
-              <label className="flex items-center space-x-3 text-sm text-slate-300">
+              <label className="flex items-center space-x-3 text-sm text-slate-300 mt-2">
                 <input
                   type="checkbox"
                   checked={isAdminMode}
@@ -80,7 +96,32 @@ export default function Login() {
                 />
                 <span>Register as Admin</span>
               </label>
-              
+              {!isAdminMode && (
+                <div className="space-y-2">
+                  <label className="block text-slate-300 text-sm font-semibold mb-1">Team Members (min 2, max 4):</label>
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="flex gap-2 mb-1">
+                      <input
+                        type="text"
+                        value={members[i].name}
+                        onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, name: e.target.value } : mem))}
+                        placeholder={`Member ${i+1} Name${i<2?' *':''}`}
+                        className="flex-1 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required={i<2}
+                      />
+                      <input
+                        type="text"
+                        value={members[i].contact}
+                        onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, contact: e.target.value } : mem))}
+                        placeholder={`Contact${i<2?' *':''}`}
+                        className="flex-1 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required={i<2}
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-slate-400">* Required. Enter at least 2 members with name and contact.</p>
+                </div>
+              )}
               {isAdminMode && (
                 <input
                   type="text"

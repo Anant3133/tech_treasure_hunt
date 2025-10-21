@@ -6,6 +6,7 @@ const {
   getAllTeamsSorted,
   updateTeamProgress,
 } = require('../services/firestore.service');
+const questionCache = require('../services/questionCache');
 const { generateToken, DEFAULT_TTL_SECONDS } = require('../services/qr.service');
 const QRCode = require('qrcode');
 
@@ -47,6 +48,12 @@ async function upsertQuestion(req, res) {
 
   try {
     const created = await createOrUpdateQuestion(req.body);
+    // Invalidate cache for this question
+    if (req.body && req.body.questionNumber) {
+      questionCache.del(String(req.body.questionNumber));
+    } else {
+      questionCache.flushAll();
+    }
     console.log('[upsertQuestion] created question:', created);
     res.status(200).json(created);
   } catch (err) {
@@ -64,11 +71,14 @@ async function removeQuestion(req, res) {
   }
 
   try {
-    const ok = await deleteQuestionByNumber(Number(req.params.questionNumber));
+    const qNum = Number(req.params.questionNumber);
+    const ok = await deleteQuestionByNumber(qNum);
     if (!ok) {
       console.log('[removeQuestion] Question not found');
       return res.status(404).json({ message: 'Question not found' });
     }
+    // Invalidate cache for this question
+    questionCache.del(String(qNum));
     console.log('[removeQuestion] Question deleted successfully');
     res.json({ success: true });
   } catch (err) {

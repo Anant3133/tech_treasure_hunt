@@ -6,13 +6,19 @@ import 'locomotive-scroll/dist/locomotive-scroll.css';
 import LocomotiveScroll from 'locomotive-scroll';
 import { useAuth } from '../App.jsx';
 import { decodeJWT } from '../api/utils';
-import LetterGlitch from '../LetterGlitch'; // ✅ Keep background
+import Hyperspeed from '../Hyperspeed'; // ✅ Replace LetterGlitch with Hyperspeed
 
 export default function Home() {
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState('login');
   const [error, setError] = useState(null);
+  const [members, setMembers] = useState([
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+    { name: '', contact: '' },
+  ]);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
 
@@ -29,16 +35,26 @@ export default function Home() {
     e.preventDefault();
     setError(null);
     try {
-      let response =
-        mode === 'login'
-          ? await login(teamName, password)
-          : await register({ teamName, password });
-
-      if (response?.token) {
-        authLogin(response.token);
-        const decoded = decodeJWT(response.token);
-        navigate(decoded?.role === 'admin' ? '/admin-panel' : '/start-game');
-      } else setError('No token received');
+      if (mode === 'register') {
+        // Validate at least 2 members with name and contact
+        const validMembers = members.filter(m => m.name.trim() && m.contact.trim());
+        if (validMembers.length < 2) {
+          setError('Please enter at least 2 team members with name and contact.');
+          return;
+        }
+        let response = await register({ teamName, password, members: validMembers });
+        if (response?.token) {
+          authLogin(response.token);
+          navigate('/start-game');
+        } else setError('Registration failed: No token received');
+      } else {
+        let response = await login(teamName, password);
+        if (response?.token) {
+          authLogin(response.token);
+          const decoded = decodeJWT(response.token);
+          navigate(decoded?.role === 'admin' ? '/admin-panel' : '/start-game');
+        } else setError('No token received');
+      }
     } catch (e) {
       setError(e?.response?.data?.message || 'Auth failed');
     }
@@ -47,15 +63,48 @@ export default function Home() {
   return (
     <div
       data-scroll-container
-      className="relative min-h-screen bg-gradient-to-b from-indigo-600 via-purple-700 to-blue-800 flex flex-col items-center justify-start overflow-x-hidden"
+      className="relative min-h-screen bg-black flex flex-col items-center justify-start overflow-x-hidden"
     >
-      {/* 🔮 Glitch Background */}
+      {/* 🌌 Hyperspeed Background (replaces LetterGlitch) */}
       <div className="absolute inset-0 -z-10">
-        <LetterGlitch
-          glitchSpeed={45}
-          centerVignette={true}
-          outerVignette={false}
-          smooth={true}
+        <Hyperspeed
+          effectOptions={{
+            onSpeedUp: () => {},
+            onSlowDown: () => {},
+            distortion: 'turbulentDistortion',
+            length: 400,
+            roadWidth: 10,
+            islandWidth: 2,
+            lanesPerRoad: 4,
+            fov: 90,
+            fovSpeedUp: 150,
+            speedUp: 2,
+            carLightsFade: 0.4,
+            totalSideLightSticks: 20,
+            lightPairsPerRoadWay: 40,
+            shoulderLinesWidthPercentage: 0.05,
+            brokenLinesWidthPercentage: 0.1,
+            brokenLinesLengthPercentage: 0.5,
+            lightStickWidth: [0.12, 0.5],
+            lightStickHeight: [1.3, 1.7],
+            movingAwaySpeed: [60, 80],
+            movingCloserSpeed: [-120, -160],
+            carLightsLength: [400 * 0.03, 400 * 0.2],
+            carLightsRadius: [0.05, 0.14],
+            carWidthPercentage: [0.3, 0.5],
+            carShiftX: [-0.8, 0.8],
+            carFloorSeparation: [0, 5],
+            colors: {
+              roadColor: 0x080808,
+              islandColor: 0x0a0a0a,
+              background: 0x000000,
+              shoulderLines: 0xFFFFFF,
+              brokenLines: 0xFFFFFF,
+              leftCars: [0xD856BF, 0x6750A2, 0xC247AC],
+              rightCars: [0x03B3C3, 0x0E5EA5, 0x324555],
+              sticks: 0x03B3C3,
+            }
+          }}
         />
       </div>
 
@@ -123,6 +172,37 @@ export default function Home() {
             >
               {mode === 'login' ? 'Login' : 'Register'}
             </motion.button>
+
+            {mode === 'register' && (
+              <div className="space-y-2">
+                <label className="block text-slate-300 text-sm font-semibold mb-1">
+                  Team Members (min 2, max 4):
+                </label>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="flex flex-col sm:flex-row gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={members[i].name}
+                      onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, name: e.target.value } : mem))}
+                      placeholder={`Member ${i + 1} Name${i < 2 ? ' *' : ''}`}
+                      className="w-full sm:w-1/2 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required={i < 2}
+                    />
+                    <input
+                      type="text"
+                      value={members[i].contact}
+                      onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, contact: e.target.value } : mem))}
+                      placeholder={`Contact${i < 2 ? ' *' : ''}`}
+                      className="w-full sm:w-1/2 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required={i < 2}
+                    />
+                  </div>
+                ))}
+                <p className="text-xs text-slate-400">
+                  * Required. Enter at least 2 members with name and contact.
+                </p>
+              </div>
+            )}
           </motion.form>
 
           <motion.div

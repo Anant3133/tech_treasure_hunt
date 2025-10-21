@@ -5,6 +5,7 @@ import NavLayout from '../components/NavLayout.jsx';
 export default function Leaderboard() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState(null);
+  const [modalTeam, setModalTeam] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +44,11 @@ export default function Leaderboard() {
               </thead>
               <tbody>
                 {rows.map((r, idx) => (
-                  <tr key={r.id} className={`border-b border-slate-600 hover:bg-slate-700 transition-colors ${idx < 3 ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20' : ''}`}>
+                  <tr
+                    key={r.id}
+                    className={`border-b border-slate-600 hover:bg-slate-700 transition-colors cursor-pointer ${idx < 3 ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20' : ''}`}
+                    onClick={() => setModalTeam(r)}
+                  >
                     <td className="p-4">
                       <div className="flex items-center">
                         {idx === 0 && <span className="text-2xl mr-2">🥇</span>}
@@ -69,6 +74,33 @@ export default function Leaderboard() {
                     </td>
                   </tr>
                 ))}
+      {/* Modal for team members */}
+      {modalTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-slate-800 rounded-xl shadow-2xl p-8 max-w-md w-full border border-slate-600 relative">
+            <button
+              className="absolute top-2 right-2 text-slate-400 hover:text-white text-2xl font-bold"
+              onClick={() => setModalTeam(null)}
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h3 className="text-2xl font-bold text-white mb-4 text-center">{modalTeam.teamName} Members</h3>
+            {modalTeam.members && modalTeam.members.length > 0 ? (
+              <ul className="space-y-3">
+                {modalTeam.members.map((m, i) => (
+                  <li key={i} className="bg-slate-700 rounded-lg p-3 flex flex-col">
+                    <span className="text-white font-semibold">{m.name}</span>
+                    <span className="text-slate-300 text-sm">{m.contact}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-400 text-center">No member info available.</p>
+            )}
+          </div>
+        </div>
+      )}
               </tbody>
             </table>
           </div>

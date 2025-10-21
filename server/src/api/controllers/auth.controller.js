@@ -24,7 +24,7 @@ async function register(req, res) {
     console.log('Validation errors:', errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
-  const { teamName, password, role: requestedRole, adminInviteKey } = req.body;
+  const { teamName, password, role: requestedRole, adminInviteKey, members } = req.body;
   const existing = await findTeamByName(teamName);
   if (existing) {
     return res.status(409).json({ message: 'Team name already taken' });
@@ -45,6 +45,7 @@ async function register(req, res) {
     lastCorrectAnswerTimestamp: null,
     finishTime: null,
     role,
+    members: Array.isArray(members) ? members.slice(0, 4) : [],
   });
   const created = await createTeam(team);
   const token = jwt.sign({ teamId: created.id, teamName: created.teamName, role: created.role || role }, process.env.JWT_SECRET, {

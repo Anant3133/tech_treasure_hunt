@@ -10,6 +10,7 @@ async function getLeaderboard(req, res) {
     currentQuestion: t.currentQuestion || 0,
     lastCorrectAnswerTimestamp: t.lastCorrectAnswerTimestamp || null,
     finishTime: t.finishTime || null,
+    members: t.members || [],
   }));
   res.json(sanitized);
 }
