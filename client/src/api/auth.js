@@ -1,15 +1,13 @@
 import api from './http';
 
 export async function login(teamName, password) {
-  const { data } = await api.post('/auth/login', { teamName, password });
-  if (data?.token) localStorage.setItem('auth_token', data.token);
-  return data;
+  const { data } = await api.post('/auth/login', { teamName: String(teamName || '').trim(), password });
+  return data; // Return the data with token, let context handle storage
 }
 
 export async function register({ teamName, password, role, adminInviteKey }) {
-  const { data } = await api.post('/auth/register', { teamName, password, role, adminInviteKey });
-  if (data?.token) localStorage.setItem('auth_token', data.token);
-  return data;
+  const { data } = await api.post('/auth/register', { teamName: String(teamName || '').trim(), password, role, adminInviteKey });
+  return data; // Return the data with token, let context handle storage
 }
 
 export function logout() {

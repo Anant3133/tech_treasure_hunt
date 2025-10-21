@@ -26,11 +26,12 @@ async function resolveToken(req, res) {
 
   const nextQuestionNumber = q + 1;
   const now = new Date();
-  const nextQuestion = await getQuestion(nextQuestionNumber);
+  const isLastQuestion = q >= 10;
+  
   const updates = {
-    currentQuestion: nextQuestion ? nextQuestionNumber : q,
+    currentQuestion: isLastQuestion ? q : nextQuestionNumber,
     lastCorrectAnswerTimestamp: now,
-    finishTime: nextQuestion ? team.finishTime || null : now,
+    finishTime: isLastQuestion ? now : (team.finishTime || null),
     awaitingQrScanForQuestion: null,
   };
 
@@ -38,7 +39,7 @@ async function resolveToken(req, res) {
 
   return res.json({
     advanced: true,
-    finished: !nextQuestion,
+    finished: isLastQuestion,
     currentQuestion: updatedTeam.currentQuestion,
   });
 }

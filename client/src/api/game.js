@@ -15,4 +15,9 @@ export async function resolveQrToken(token) {
   return data; // { advanced, finished, currentQuestion }
 }
 
+export async function getTeamProgress() {
+  const { data } = await api.get('/game/progress');
+  return data; // { currentQuestion, finishTime }
+}
+
 

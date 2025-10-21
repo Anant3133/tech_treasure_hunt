@@ -14,7 +14,13 @@ function getQuestionsCollection() {
 }
 
 async function findTeamByName(teamName) {
-  const snapshot = await getTeamsCollection().where('teamName', '==', teamName).limit(1).get();
+  if (!teamName) return null;
+  // Try exact match first
+  let snapshot = await getTeamsCollection().where('teamName', '==', teamName).limit(1).get();
+  if (snapshot.empty) {
+    // Try lowercase match to handle case differences
+    snapshot = await getTeamsCollection().where('teamName', '==', String(teamName).toLowerCase()).limit(1).get();
+  }
   if (snapshot.empty) return null;
   const doc = snapshot.docs[0];
   return { id: doc.id, ...doc.data() };
@@ -85,14 +91,33 @@ async function updateTeamProgress(teamId, updates) {
 async function getAllTeamsSorted() {
   const snapshot = await getTeamsCollection().get();
   const teams = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  
   teams.sort((a, b) => {
+    const aFinished = Boolean(a.finishTime);
+    const bFinished = Boolean(b.finishTime);
+    
+    // Finished teams come first
+    if (aFinished && !bFinished) return -1;
+    if (!aFinished && bFinished) return 1;
+    
+    // Both finished - sort by finish time (earlier finish = higher rank)
+    if (aFinished && bFinished) {
+      const aTime = a.finishTime.toMillis ? a.finishTime.toMillis() : new Date(a.finishTime).getTime();
+      const bTime = b.finishTime.toMillis ? b.finishTime.toMillis() : new Date(b.finishTime).getTime();
+      return aTime - bTime;
+    }
+    
+    // Both unfinished - sort by current question (higher = better), then by last correct answer time
     if ((b.currentQuestion || 0) !== (a.currentQuestion || 0)) {
       return (b.currentQuestion || 0) - (a.currentQuestion || 0);
     }
+    
+    // Same question - sort by who answered most recently
     const at = a.lastCorrectAnswerTimestamp ? a.lastCorrectAnswerTimestamp.toMillis ? a.lastCorrectAnswerTimestamp.toMillis() : new Date(a.lastCorrectAnswerTimestamp).getTime() : Infinity;
     const bt = b.lastCorrectAnswerTimestamp ? b.lastCorrectAnswerTimestamp.toMillis ? b.lastCorrectAnswerTimestamp.toMillis() : new Date(b.lastCorrectAnswerTimestamp).getTime() : Infinity;
     return at - bt;
   });
+  
   return teams;
 }
 

@@ -1,70 +1,171 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { useState, useEffect, createContext, useContext } from 'react'
 import './App.css'
 import Home from './pages/Home.jsx'
 import StartGame from './pages/StartGame.jsx'
 import Game from './pages/Game.jsx'
 import Login from './pages/Login.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
-import Admin from './pages/Admin.jsx'
+import AdminPanel from './pages/AdminPanel.jsx'
 import { logout } from './api/auth'
+import api from './api/http'
+import { decodeJWT } from './api/utils'
+
+// Auth Context
+const AuthContext = createContext();
+
+function AuthProvider({ children }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Decode JWT to get user info
+      const decoded = decodeJWT(token);
+      
+      // Verify token by making a request to a protected endpoint
+      const response = await api.get('/game/progress');
+      setIsAuthenticated(true);
+      setUser({ 
+        token, 
+        teamId: decoded?.teamId,
+        teamName: decoded?.teamName,
+        role: decoded?.role || 'participant'
+      });
+    } catch (error) {
+      // Token is invalid or expired
+      localStorage.removeItem('auth_token');
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = (token) => {
+    localStorage.setItem('auth_token', token);
+    const decoded = decodeJWT(token);
+    setIsAuthenticated(true);
+    setUser({ 
+      token,
+      teamId: decoded?.teamId,
+      teamName: decoded?.teamName,
+      role: decoded?.role || 'participant'
+    });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    setIsAuthenticated(false);
+    setUser(null);
+    logout(); // Call the existing logout function
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      isLoading,
+      user,
+      login,
+      logout: handleLogout,
+      checkAuth
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
+
+// Export the useAuth hook for use in other components
+export { useAuth };
 
 function RequireAuth({ children }) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  if (!token) return <Navigate to="/" replace />;
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace state={{ from: location }} />;
+  }
+
+  return children;
+}
+
+function RedirectIfAuthenticated({ children }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/start-game" replace />;
+  }
+
   return children;
 }
 
 function Layout({ children }) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  const location = window.location.pathname;
-  
-  // Don't show navbar on home page
-  if (location === '/') {
-    return children;
-  }
-  
-  if (!token) {
-    return children; // No nav for unauthenticated pages
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <nav className="p-4 flex gap-4 border-b bg-white justify-between items-center shadow-sm">
-        <div className="flex gap-4">
-          <Link to="/start-game" className="font-semibold hover:text-blue-600 transition-colors">Home</Link>
-          <Link to="/game" className="font-semibold hover:text-blue-600 transition-colors">Game</Link>
-          <Link to="/leaderboard" className="hover:text-blue-600 transition-colors">Leaderboard</Link>
-        </div>
-        <button 
-          onClick={() => { logout(); window.location.href = '/'; }}
-          className="text-red-600 hover:text-red-800 underline transition-colors"
-        >
-          Logout
-        </button>
-      </nav>
-      <main className="w-full">{children}</main>
-    </div>
-  );
+  return children; // Let individual route components handle their own layout needs
 }
 
 function LoginPage() { return <Login /> }
 function LeaderboardPage() { return <Leaderboard /> }
-function AdminPage() { return <Admin /> }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/start-game" element={<RequireAuth><StartGame /></RequireAuth>} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
-          <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
-          <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
-          <Route path="*" element={<div>Not found</div>} />
-        </Routes>
-      </Layout>
+      <AuthProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<RedirectIfAuthenticated><Home /></RedirectIfAuthenticated>} />
+            <Route path="/start-game" element={<RequireAuth><StartGame /></RequireAuth>} />
+            <Route path="/login" element={<RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated>} />
+            <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
+            <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
+            <Route path="*" element={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Page not found</div>} />
+          </Routes>
+        </Layout>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

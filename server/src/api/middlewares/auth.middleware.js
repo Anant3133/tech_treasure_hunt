@@ -25,6 +25,11 @@ function authorizeRoles(...allowed) {
   };
 }
 
-module.exports = { protect, authorizeRoles };
+// Convenience middleware for admin-only routes
+function adminMiddleware(req, res, next) {
+  return authorizeRoles('admin')(req, res, next);
+}
+
+module.exports = { protect, authorizeRoles, adminMiddleware };
 
 

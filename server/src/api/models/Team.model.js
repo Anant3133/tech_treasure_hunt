@@ -13,7 +13,8 @@ class TeamModel {
 
   toPlain() {
     return {
-      teamName: this.teamName,
+      // store teamName normalized to lowercase to avoid case-sensitivity issues
+      teamName: String(this.teamName || '').toLowerCase(),
       password: this.password,
       currentQuestion: this.currentQuestion,
       lastCorrectAnswerTimestamp: this.lastCorrectAnswerTimestamp,

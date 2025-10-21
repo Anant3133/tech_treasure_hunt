@@ -50,11 +50,13 @@ async function submitAnswerController(req, res) {
   const nextQuestionNumber = currentQuestionNumber + 1;
   const now = new Date();
 
-  // Check if next question exists to determine finish
-  const nextQuestion = await getQuestion(nextQuestionNumber);
-  if (!nextQuestion) {
-    // finishing on this correct answer
+  // Check if this is the last question (question 10)
+  const isLastQuestion = currentQuestionNumber >= 10;
+  
+  if (isLastQuestion) {
+    // This was the final question - mark as finished
     const updatedTeam = await updateTeamProgress(teamId, {
+      currentQuestion: currentQuestionNumber,
       lastCorrectAnswerTimestamp: now,
       finishTime: now,
     });
@@ -62,16 +64,19 @@ async function submitAnswerController(req, res) {
       correct: true,
       finished: true,
       nextHint: null,
-      currentQuestion: updatedTeam.currentQuestion || currentQuestionNumber,
+      currentQuestion: updatedTeam.currentQuestion,
     });
   }
 
-  // Require QR scan to advance: mark awaiting QR for this question
+  // Not the last question - require QR scan to advance
   await updateTeamProgress(teamId, {
     lastCorrectAnswerTimestamp: now,
     awaitingQrScanForQuestion: currentQuestionNumber,
   });
 
+  // Get the next question's hint
+  const nextQuestion = await getQuestion(nextQuestionNumber);
+  
   return res.json({
     correct: true,
     finished: false,
@@ -82,10 +87,24 @@ async function submitAnswerController(req, res) {
   });
 }
 
+async function getTeamProgressController(req, res) {
+  const { teamId } = req.team;
+
+  const team = await findTeamById(teamId);
+  if (!team) return res.status(404).json({ message: 'Team not found' });
+
+  return res.json({
+    currentQuestion: team.currentQuestion || 1,
+    finishTime: team.finishTime || null,
+    hasStarted: (team.currentQuestion || 1) > 1 || team.lastCorrectAnswerTimestamp !== null
+  });
+}
+
 module.exports = {
   getQuestion: getQuestionController,
   submitAnswer: submitAnswerController,
   submitAnswerValidations,
+  getTeamProgress: getTeamProgressController,
 };
 
 
