@@ -35,7 +35,13 @@ export default function QRScanner({ onScan, onError, onClose, modal = true }) {
     return () => {
       // Proper cleanup
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        // Some browsers/implementations may return a MediaStream or a VideoElement
+        // Only call getTracks if available
+        if (typeof streamRef.current.getTracks === 'function') {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        } else if (streamRef.current.srcObject && typeof streamRef.current.srcObject.getTracks === 'function') {
+          streamRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
         streamRef.current = null;
       }
       if (readerRef.current) {

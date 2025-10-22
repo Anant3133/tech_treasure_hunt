@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
 import { getCurrentQrToken } from '../api/admin';
@@ -24,6 +24,10 @@ export default function AdminPanel() {
   const [qrQuestionNumber, setQrQuestionNumber] = useState(1);
   const [qrToken, setQrToken] = useState('');
   const [qrTtl, setQrTtl] = useState(60);
+  const [qrCountdown, setQrCountdown] = useState(60);
+  const countdownIntervalRef = useRef();
+  const qrExpiryRef = useRef(Date.now() + 60000);
+  const lastTokenRef = useRef('');
   
   // Question form state
   const [questionForm, setQuestionForm] = useState({
@@ -110,29 +114,48 @@ export default function AdminPanel() {
   // QR Code functionality
   useEffect(() => {
     if (!isAuthenticated) return;
-    
     let mounted = true;
     let intervalId;
-    
+
     const fetchToken = async () => {
       try {
         const data = await getCurrentQrToken(qrQuestionNumber);
         if (!mounted) return;
-        setQrToken(data.token);
-        setQrTtl(data.ttlSeconds || 60);
+        // Only update expiry/timer if token actually changed
+        if (data.token !== lastTokenRef.current) {
+          setQrToken(data.token);
+          setQrTtl(data.ttlSeconds || 60);
+          const expiry = Date.now() + ((data.ttlSeconds || 60) * 1000);
+          qrExpiryRef.current = expiry;
+          setQrCountdown(Math.ceil((expiry - Date.now()) / 1000));
+          lastTokenRef.current = data.token;
+        }
       } catch (error) {
         console.error('Failed to fetch QR token:', error);
       }
     };
-    
+
     fetchToken();
     intervalId = setInterval(fetchToken, 5000);
-    
+
     return () => {
       mounted = false;
       clearInterval(intervalId);
     };
   }, [qrQuestionNumber, isAuthenticated]);
+
+  // Countdown timer for QR expiry (accurate, resets only on new token)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    countdownIntervalRef.current = setInterval(() => {
+      const secondsLeft = Math.max(0, Math.ceil((qrExpiryRef.current - Date.now()) / 1000));
+      setQrCountdown(secondsLeft);
+    }, 250);
+    return () => {
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    };
+  }, [isAuthenticated]);
 
   // Question management
   const handleCreateQuestion = async (e) => {
@@ -317,7 +340,9 @@ export default function AdminPanel() {
                   )}
                 </div>
                 <p className="text-slate-300">
-                  Refreshes every <span className="font-bold text-blue-400">{qrTtl}</span> seconds
+                  QR expires in: <span className="font-bold text-blue-400">{qrCountdown}</span> seconds
+                  {" "}
+                  <span className="text-slate-400 text-xs">(auto-refreshes every {qrTtl} seconds)</span>
                 </p>
               </div>
             </div>
