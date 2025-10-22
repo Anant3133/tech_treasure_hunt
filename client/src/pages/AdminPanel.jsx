@@ -67,7 +67,9 @@ export default function AdminPanel() {
         api.get('/admin/questions'),
         api.get('/admin/teams')
       ]);
-      setQuestions(questionsRes.data);
+  // Sort questions by questionNumber ascending
+  const sortedQuestions = [...questionsRes.data].sort((a, b) => Number(a.questionNumber) - Number(b.questionNumber));
+  setQuestions(sortedQuestions);
       setTeams(teamsRes.data);
     } catch (error) {
       console.error('Failed to load admin data:', error);
@@ -169,16 +171,53 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDeleteQuestion = async (questionNumber) => {
+  const handleDeleteQuestion = async (questionId, questionNumber) => {
     if (!confirm(`Delete question ${questionNumber}?`)) return;
-    
     try {
       await api.delete(`/admin/questions/${questionNumber}`);
+      // Decrement questionNumber for all questions with higher number
+      setQuestions(qs => {
+        const filtered = qs.filter(q => q.id !== questionId);
+        const updated = filtered.map(q => {
+          if (Number(q.questionNumber) > Number(questionNumber)) {
+            const newQ = { ...q, questionNumber: Number(q.questionNumber) - 1 };
+            // Update backend for each affected question
+            api.post('/admin/questions', newQ);
+            return newQ;
+          }
+          return q;
+        });
+        return updated;
+      });
       loadAdminData();
     } catch (error) {
       console.error('Failed to delete question:', error);
     }
   };
+
+  // Drag and drop for rearranging questions
+  const [dragIndex, setDragIndex] = useState(null);
+  const handleDragStart = (idx) => setDragIndex(idx);
+  const handleDragEnter = (idx) => {
+    if (dragIndex === null || dragIndex === idx) return;
+    setQuestions(qs => {
+      const arr = [...qs];
+      const [removed] = arr.splice(dragIndex, 1);
+      arr.splice(idx, 0, removed);
+      // Renumber all questions in new order
+      arr.forEach((q, i) => {
+        if (Number(q.questionNumber) !== i + 1) {
+          const newQ = { ...q, questionNumber: i + 1 };
+          arr[i] = newQ;
+          // Update backend for each affected question
+          api.post('/admin/questions', newQ);
+        }
+      });
+      return arr;
+    });
+    setDragIndex(idx);
+  };
+  const handleDragEnd = () => setDragIndex(null);
 
   const handleResetTeam = async (teamId) => {
     if (!confirm('Reset this team\'s progress?')) return;
@@ -406,8 +445,17 @@ export default function AdminPanel() {
               <h2 className="text-xl font-bold text-white mb-4">Existing Questions</h2>
               
               <div className="space-y-4">
-                {questions.map(q => (
-                  <div key={q.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                {questions.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    className={`bg-slate-700 rounded-lg p-4 border border-slate-600 ${dragIndex === idx ? 'ring-2 ring-blue-400' : ''}`}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragEnter={() => handleDragEnter(idx)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    style={{ cursor: 'grab' }}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-bold text-white mb-2">
@@ -417,12 +465,15 @@ export default function AdminPanel() {
                         <p className="text-green-400">Answer: {q.answer}</p>
                         {q.hint && <p className="text-yellow-400">Hint: {q.hint}</p>}
                       </div>
-                      <button
-                        onClick={() => handleDeleteQuestion(q.questionNumber)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex flex-col gap-2 items-end">
+                        <button
+                          onClick={() => handleDeleteQuestion(q.id, q.questionNumber)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          Delete
+                        </button>
+                        <span className="text-xs text-slate-400 select-none">Drag to reorder</span>
+                      </div>
                     </div>
                   </div>
                 ))}
