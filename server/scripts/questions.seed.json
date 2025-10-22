@@ -1,0 +1,62 @@
+[
+  {
+    "questionNumber": 1,
+    "text": "What is the capital of France?",
+    "answer": "Paris",
+    "hint": "It's known as the city of lights."
+  },
+  {
+    "questionNumber": 2,
+    "text": "What is the chemical symbol for water?",
+    "answer": "H2O",
+    "hint": "Two hydrogens, one oxygen."
+  },
+  {
+    "questionNumber": 3,
+    "text": "Who wrote 'Romeo and Juliet'?",
+    "answer": "Shakespeare",
+    "hint": "Famous English playwright."
+  },
+  {
+    "questionNumber": 4,
+    "text": "What planet is known as the Red Planet?",
+    "answer": "Mars",
+    "hint": "Fourth planet from the sun."
+  },
+  {
+    "questionNumber": 5,
+    "text": "What is the largest mammal?",
+    "answer": "Blue whale",
+    "hint": "Lives in the ocean."
+  },
+  {
+    "questionNumber": 6,
+    "text": "What is the square root of 64?",
+    "answer": "8",
+    "hint": "It's a single digit."
+  },
+  {
+    "questionNumber": 7,
+    "text": "Who painted the Mona Lisa?",
+    "answer": "Leonardo da Vinci",
+    "hint": "Renaissance genius."
+  },
+  {
+    "questionNumber": 8,
+    "text": "What is the boiling point of water in Celsius?",
+    "answer": "100",
+    "hint": "A round number."
+  },
+  {
+    "questionNumber": 9,
+    "text": "What is the hardest natural substance?",
+    "answer": "Diamond",
+    "hint": "Used in jewelry and cutting tools."
+  },
+  {
+    "questionNumber": 10,
+    "text": "What is the largest continent?",
+    "answer": "Asia",
+    "hint": "Home to China and India."
+  }
+]

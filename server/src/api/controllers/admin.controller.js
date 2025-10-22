@@ -239,6 +239,7 @@ module.exports = {
   upsertQuestion,
   upsertQuestionValidations,
   removeQuestion,
+  removeQuestionById,
   deleteQuestionValidations,
   getQuestions,
   getTeams,

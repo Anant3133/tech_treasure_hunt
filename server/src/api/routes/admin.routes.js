@@ -6,6 +6,7 @@ const {
   upsertQuestion,
   upsertQuestionValidations,
   removeQuestion,
+  removeQuestionById,
   deleteQuestionValidations,
   getQuestions,
   getTeams,
@@ -27,7 +28,7 @@ router.use(protect, adminMiddleware);
 router.get('/questions', getQuestions);
 router.post('/questions', upsertQuestionValidations, upsertQuestion);
 router.delete('/questions/:questionNumber', deleteQuestionValidations, removeQuestion);
-router.delete('/questions/id/:questionId', require('../controllers/admin.controller').removeQuestionById);
+router.delete('/questions/id/:questionId', removeQuestionById);
 
 // Teams routes
 router.get('/teams', getTeams);
