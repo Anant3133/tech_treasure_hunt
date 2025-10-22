@@ -68,9 +68,16 @@ export default function AdminPanel() {
         api.get('/admin/questions'),
         api.get('/admin/teams')
       ]);
-  // Sort questions by questionNumber ascending
-  const sortedQuestions = [...questionsRes.data].sort((a, b) => Number(a.questionNumber) - Number(b.questionNumber));
-  setQuestions(sortedQuestions);
+  // Remove duplicate questionNumbers, keep only the first occurrence
+  const seen = new Set();
+  const deduped = [...questionsRes.data]
+    .sort((a, b) => Number(a.questionNumber) - Number(b.questionNumber))
+    .filter(q => {
+      if (seen.has(Number(q.questionNumber))) return false;
+      seen.add(Number(q.questionNumber));
+      return true;
+    });
+  setQuestions(deduped);
       setTeams(teamsRes.data);
     } catch (error) {
       console.error('Failed to load admin data:', error);
