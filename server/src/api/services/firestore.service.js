@@ -54,19 +54,38 @@ async function getQuestion(questionNumber) {
   return { id: doc.id, ...doc.data() };
 }
 
+
 async function createOrUpdateQuestion(questionData) {
   const data = toPlainIfNeeded(questionData);
   if (!data || typeof data.questionNumber === 'undefined') throw new Error('questionNumber required');
-  const snapshot = await getQuestionsCollection().where('questionNumber', '==', Number(data.questionNumber)).limit(1).get();
-  if (snapshot.empty) {
+  // Check for duplicate questionNumber (other than self)
+  const snapshot = await getQuestionsCollection().where('questionNumber', '==', Number(data.questionNumber)).get();
+  if (!snapshot.empty) {
+    // If updating, allow if id matches
+    if (!data.id || snapshot.docs.some(doc => doc.id !== data.id)) {
+      throw new Error('A question with this number already exists');
+    }
+  }
+  if (data.id) {
+    // Update by id
+    const docRef = getQuestionsCollection().doc(data.id);
+    await docRef.update(data);
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() };
+  } else {
+    // Create new
     const ref = await getQuestionsCollection().add(data);
     const doc = await ref.get();
     return { id: doc.id, ...doc.data() };
   }
-  const docRef = snapshot.docs[0].ref;
-  await docRef.update(data);
+}
+
+async function deleteQuestionById(questionId) {
+  const docRef = getQuestionsCollection().doc(questionId);
   const doc = await docRef.get();
-  return { id: doc.id, ...doc.data() };
+  if (!doc.exists) return false;
+  await docRef.delete();
+  return true;
 }
 
 async function deleteQuestionByNumber(questionNumber) {

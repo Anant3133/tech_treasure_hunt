@@ -58,7 +58,23 @@ async function upsertQuestion(req, res) {
     res.status(200).json(created);
   } catch (err) {
     console.error('[upsertQuestion] Firestore error:', err);
+    if (err.message && err.message.includes('already exists')) {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: 'Failed to upsert question' });
+  }
+}
+
+async function removeQuestionById(req, res) {
+  const { questionId } = req.params;
+  try {
+    const ok = await require('../services/firestore.service').deleteQuestionById(questionId);
+    if (!ok) return res.status(404).json({ message: 'Question not found' });
+    questionCache.flushAll();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[removeQuestionById] Firestore error:', err);
+    res.status(500).json({ message: 'Failed to remove question' });
   }
 }
 

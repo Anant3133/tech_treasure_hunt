@@ -21,6 +21,7 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('qr');
   const [questions, setQuestions] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [questionError, setQuestionError] = useState(null);
   const [qrQuestionNumber, setQrQuestionNumber] = useState(1);
   const [qrToken, setQrToken] = useState('');
   const [qrTtl, setQrTtl] = useState(60);
@@ -162,19 +163,22 @@ export default function AdminPanel() {
   // Question management
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
+    setQuestionError(null);
     try {
       await api.post('/admin/questions', questionForm);
       setQuestionForm({ questionNumber: '', text: '', answer: '', hint: '' });
       loadAdminData();
     } catch (error) {
+      setQuestionError(error?.response?.data?.message || 'Failed to create/update question');
       console.error('Failed to create question:', error);
     }
   };
 
   const handleDeleteQuestion = async (questionId, questionNumber) => {
     if (!confirm(`Delete question ${questionNumber}?`)) return;
+    setQuestionError(null);
     try {
-      await api.delete(`/admin/questions/${questionNumber}`);
+      await api.delete(`/admin/questions/id/${questionId}`);
       // Decrement questionNumber for all questions with higher number
       setQuestions(qs => {
         const filtered = qs.filter(q => q.id !== questionId);
@@ -182,7 +186,7 @@ export default function AdminPanel() {
           if (Number(q.questionNumber) > Number(questionNumber)) {
             const newQ = { ...q, questionNumber: Number(q.questionNumber) - 1 };
             // Update backend for each affected question
-            api.post('/admin/questions', newQ);
+            api.post('/admin/questions', newQ).catch(err => setQuestionError(err?.response?.data?.message || 'Failed to update question numbers'));
             return newQ;
           }
           return q;
@@ -191,6 +195,7 @@ export default function AdminPanel() {
       });
       loadAdminData();
     } catch (error) {
+      setQuestionError(error?.response?.data?.message || 'Failed to delete question');
       console.error('Failed to delete question:', error);
     }
   };
@@ -200,6 +205,7 @@ export default function AdminPanel() {
   const handleDragStart = (idx) => setDragIndex(idx);
   const handleDragEnter = (idx) => {
     if (dragIndex === null || dragIndex === idx) return;
+    setQuestionError(null);
     setQuestions(qs => {
       const arr = [...qs];
       const [removed] = arr.splice(dragIndex, 1);
@@ -210,7 +216,7 @@ export default function AdminPanel() {
           const newQ = { ...q, questionNumber: i + 1 };
           arr[i] = newQ;
           // Update backend for each affected question
-          api.post('/admin/questions', newQ);
+          api.post('/admin/questions', newQ).catch(err => setQuestionError(err?.response?.data?.message || 'Failed to update question numbers'));
         }
       });
       return arr;
@@ -443,7 +449,11 @@ export default function AdminPanel() {
             {/* Questions List */}
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
               <h2 className="text-xl font-bold text-white mb-4">Existing Questions</h2>
-              
+              {questionError && (
+                <div className="bg-red-900/30 border-2 border-red-600 rounded-xl p-3 mb-4">
+                  <p className="text-red-300 text-center text-sm">{questionError}</p>
+                </div>
+              )}
               <div className="space-y-4">
                 {questions.map((q, idx) => (
                   <div

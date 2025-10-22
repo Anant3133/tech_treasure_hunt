@@ -27,6 +27,7 @@ router.use(protect, adminMiddleware);
 router.get('/questions', getQuestions);
 router.post('/questions', upsertQuestionValidations, upsertQuestion);
 router.delete('/questions/:questionNumber', deleteQuestionValidations, removeQuestion);
+router.delete('/questions/id/:questionId', require('../controllers/admin.controller').removeQuestionById);
 
 // Teams routes
 router.get('/teams', getTeams);
