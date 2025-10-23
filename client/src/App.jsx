@@ -152,6 +152,7 @@ function Layout({ children }) {
 function LoginPage() { return <Login /> }
 function LeaderboardPage() { return <Leaderboard /> }
 
+export default function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
