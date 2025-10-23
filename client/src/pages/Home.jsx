@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -33,15 +34,36 @@ export default function Home() {
     });
     // Delay Hyperspeed render to next tick to ensure DOM is ready
     const t = setTimeout(() => setShowHyperspeed(true), 0);
+
+    // Retry mounting Hyperspeed on visibilitychange, resize or touchstart (mobile browsers sometimes block initial render)
+    const tryMount = () => {
+      if (!showHyperspeed) {
+        // small debounce
+        setTimeout(() => setShowHyperspeed(true), 50);
+      }
+    };
+    window.addEventListener('visibilitychange', tryMount);
+    window.addEventListener('resize', tryMount);
+    window.addEventListener('touchstart', tryMount, { passive: true });
+
     return () => {
       scroll.destroy();
       clearTimeout(t);
+      window.removeEventListener('visibilitychange', tryMount);
+      window.removeEventListener('resize', tryMount);
+      window.removeEventListener('touchstart', tryMount);
     };
   }, []);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
+    if ((password || '').length < 6) {
+      const msg = 'Password must be at least 6 characters';
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
     try {
       if (mode === 'register') {
         // Validate at least 2 members with name and contact
@@ -53,18 +75,28 @@ export default function Home() {
         let response = await register({ teamName, password, members: validMembers });
         if (response?.token) {
           authLogin(response.token);
+          toast.success('Registration successful');
           navigate('/start-game');
-        } else setError('Registration failed: No token received');
+        } else {
+          setError('Registration failed: No token received');
+          toast.error('Registration failed: No token received');
+        }
       } else {
         let response = await login(teamName, password);
         if (response?.token) {
           authLogin(response.token);
+          toast.success('Login successful');
           const decoded = decodeJWT(response.token);
           navigate(decoded?.role === 'admin' ? '/admin-panel' : '/start-game');
-        } else setError('No token received');
+        } else {
+          setError('No token received');
+          toast.error('No token received');
+        }
       }
     } catch (e) {
-      setError(e?.response?.data?.message || 'Auth failed');
+      const msg = e?.response?.data?.message || 'Auth failed';
+      setError(msg);
+      toast.error(msg);
     }
   }
 

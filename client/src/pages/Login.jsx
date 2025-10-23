@@ -24,6 +24,12 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
   setError(null);
+  if ((password || '').length < 6) {
+    const msg = 'Password must be at least 6 characters';
+    setError(msg);
+    toast.error(msg);
+    return;
+  }
     try {
       let response;
       const normalizedTeamName = String(teamName || '').trim();

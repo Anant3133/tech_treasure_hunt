@@ -33,7 +33,7 @@ export default function Leaderboard() {
           )}
 
           {/* Mobile-first layout */}
-          <div className="flex flex-col sm:hidden gap-3">
+          <div className="flex flex-col sm:hidden gap-2">
             {rows.map((r, idx) => (
               <button
                 key={r.id}
@@ -53,11 +53,11 @@ export default function Leaderboard() {
                   >
                     #{idx + 1}
                   </span>
-                  <span className="ml-2 font-semibold text-base text-white truncate flex-1">
+                  <span className="ml-2 font-semibold text-sm text-white truncate flex-1">
                     {r.teamName}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-xs sm:text-sm">
                   <span className="bg-slate-800 px-2 py-1 rounded text-slate-300">
                     Q: {r.currentQuestion || 0}
                   </span>
