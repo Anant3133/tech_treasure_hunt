@@ -147,6 +147,7 @@ module.exports = {
   getQuestion,
   createOrUpdateQuestion,
   deleteQuestionByNumber,
+  deleteQuestionById,
   listQuestions,
   updateTeamProgress,
   getAllTeamsSorted,
