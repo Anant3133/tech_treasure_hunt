@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App.jsx';
@@ -22,7 +23,7 @@ export default function Login() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    setError(null);
+  setError(null);
     try {
       let response;
       const normalizedTeamName = String(teamName || '').trim();
@@ -39,7 +40,9 @@ export default function Login() {
             .map(m => ({ name: m.name.trim(), contact: m.contact.trim() }))
             .filter(m => m.name && m.contact);
           if (filteredMembers.length < 2) {
-            setError('At least 2 team members (name and contact) are required');
+            const msg = 'At least 2 team members (name and contact) are required';
+            setError(msg);
+            toast.error(msg);
             return;
           }
           registerData.members = filteredMembers;
@@ -50,7 +53,7 @@ export default function Login() {
       
       if (response?.token) {
         authLogin(response.token); // Use context login
-        
+        toast.success(mode === 'login' ? 'Login successful!' : 'Registration successful!');
         // Decode token to check user role and redirect appropriately
         const decoded = decodeJWT(response.token);
         if (decoded?.role === 'admin') {
@@ -60,9 +63,12 @@ export default function Login() {
         }
       } else {
         setError('No token received');
+        toast.error('No token received');
       }
     } catch (e) {
-      setError(e?.response?.data?.message || 'Auth failed');
+      const msg = e?.response?.data?.message || 'Auth failed';
+      setError(msg);
+      toast.error(msg);
     }
   }
 

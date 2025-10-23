@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getQuestion, submitAnswer, resolveQrToken, getTeamProgress } from '../api/game';
 import QRScanner from '../components/QRScanner.jsx';
 import NavLayout from '../components/NavLayout.jsx';
 
 export default function Game() {
+  const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [question, setQuestion] = useState(null);
   const [answer, setAnswer] = useState('');
@@ -21,8 +23,7 @@ export default function Game() {
       try {
         const progress = await getTeamProgress();
         if (progress.finishTime) {
-          setStatus('🏆 You have completed the treasure hunt! Check the leaderboard.');
-          setLoading(false);
+          navigate('/completion');
           return;
         }
         setCurrentQuestion(progress.currentQuestion || 1);
@@ -60,8 +61,8 @@ export default function Game() {
     try {
       const res = await submitAnswer(answer);
       if (res.finished) {
-        setStatus('Finished!');
-        setHint(null);
+        navigate('/completion');
+        return;
       } else if (res.requiresQrScan) {
         setStatus('Answer correct. Please scan the on-site QR to proceed.');
         setHint(res.nextHint || null);
@@ -84,7 +85,7 @@ export default function Game() {
         setQuestion(null); // Clear old question to force reload
         setCurrentQuestion(res.currentQuestion); // This triggers useEffect to load the new question
         setAnswer('');
-        setStatus('Advanced to next question');
+        setStatus(null); // Clear any previous status message
         setShowScanner(false);
         setHint(null);
       }

@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast';
+import Completion from './pages/Completion.jsx';
 import { useState, useEffect, createContext, useContext } from 'react'
 import './App.css'
 import Home from './pages/Home.jsx'
@@ -150,9 +152,9 @@ function Layout({ children }) {
 function LoginPage() { return <Login /> }
 function LeaderboardPage() { return <Leaderboard /> }
 
-export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
       <AuthProvider>
         <Layout>
           <Routes>
@@ -160,6 +162,7 @@ export default function App() {
             <Route path="/start-game" element={<RequireAuth><StartGame /></RequireAuth>} />
             <Route path="/login" element={<RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated>} />
             <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
+            <Route path="/completion" element={<RequireAuth><Completion /></RequireAuth>} />
             <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
             <Route path="/admin-panel" element={<AdminPanel />} />
             <Route path="*" element={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Page not found</div>} />
@@ -167,5 +170,5 @@ export default function App() {
         </Layout>
       </AuthProvider>
     </BrowserRouter>
-  )
+  );
 }

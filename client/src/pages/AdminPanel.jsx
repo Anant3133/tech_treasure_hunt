@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
 import { getCurrentQrToken } from '../api/admin';
@@ -87,7 +88,6 @@ export default function AdminPanel() {
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError(null);
-    
     try {
       let resp;
       if (authMode === 'login') {
@@ -100,16 +100,17 @@ export default function AdminPanel() {
           adminInviteKey 
         });
       }
-
       // If we received a token, persist it in auth context/localStorage
       if (resp?.token) {
         authLogin(resp.token);
+        toast.success(authMode === 'login' ? 'Admin login successful!' : 'Admin registration successful!');
       }
-
       // Check if the login was successful and user is admin
       await checkAuthStatus();
     } catch (error) {
-      setAuthError(error?.response?.data?.message || 'Authentication failed');
+      const msg = error?.response?.data?.message || 'Authentication failed';
+      setAuthError(msg);
+      toast.error(msg);
     }
   };
 
