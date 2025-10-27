@@ -9,6 +9,7 @@ import LocomotiveScroll from 'locomotive-scroll';
 import { useAuth } from '../App.jsx';
 import { decodeJWT } from '../api/utils';
 import Hyperspeed from '../Hyperspeed'; // ✅ Replace LetterGlitch with Hyperspeed
+import { getTeamInfo } from '../api/game';
 
 export default function Home() {
 
@@ -23,8 +24,9 @@ export default function Home() {
     { name: '', contact: '' },
   ]);
   const [showHyperspeed, setShowHyperspeed] = useState(false);
+  const [fetchedTeam, setFetchedTeam] = useState(null);
   const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const scroll = new LocomotiveScroll({
@@ -54,6 +56,24 @@ export default function Home() {
       window.removeEventListener('touchstart', tryMount);
     };
   }, []);
+
+  useEffect(() => {
+    // If authenticated, fetch team info and display members
+    let mounted = true;
+    async function loadTeam() {
+      try {
+        if (isAuthenticated && user?.teamId) {
+          const data = await getTeamInfo();
+          if (mounted) setFetchedTeam(data);
+        }
+      } catch (err) {
+        // don't crash the Home page if fetch fails
+        console.warn('Failed to fetch team info', err?.response?.data || err?.message || err);
+      }
+    }
+    loadTeam();
+    return () => { mounted = false; };
+  }, [isAuthenticated, user]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -170,6 +190,19 @@ export default function Home() {
           >
             Tech Treasure Hunt
           </motion.h1>
+
+          {/* Show current logged-in team info (if available) */}
+          {fetchedTeam && (
+            <div className="mt-2 mb-4 text-left text-sm text-white/90 bg-white/5 border border-white/10 p-3 rounded-lg">
+              <div className="font-semibold">Team: <span className="text-indigo-200">{fetchedTeam.teamName || user?.teamName}</span></div>
+              <div className="mt-2 text-xs text-slate-200">Members:</div>
+              <ul className="list-disc pl-5 mt-1 text-xs text-slate-100">
+                {(fetchedTeam.members || []).map((m, idx) => (
+                  <li key={idx}>{m?.name || 'Unnamed'}{m?.contact ? ` — ${m.contact}` : ''}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <motion.p
             initial={{ opacity: 0 }}

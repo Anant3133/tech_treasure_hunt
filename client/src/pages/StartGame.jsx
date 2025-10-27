@@ -4,16 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { getTeamProgress } from '../api/game';
 import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
+import { useAuth } from '../App.jsx';
+import { getTeamInfo } from '../api/game';
 
 export default function StartGame() {
   const navigate = useNavigate();
   const [teamProgress, setTeamProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchedTeam, setFetchedTeam] = useState(null);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchProgress = async () => {
       try {
+        console.log('StartGame: fetching team progress');
         const progress = await getTeamProgress();
+        console.log('StartGame: progress', progress);
         setTeamProgress(progress);
       } catch (error) {
         console.error('Failed to fetch team progress:', error);
@@ -24,6 +30,31 @@ export default function StartGame() {
 
     fetchProgress();
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadTeam() {
+      const token = localStorage.getItem('auth_token');
+      console.log('StartGame: loadTeam start, user=', user, 'isAuthenticated=', isAuthenticated, 'tokenPresent=', Boolean(token));
+      try {
+        if (isAuthenticated && user?.teamId) {
+          const info = await getTeamInfo();
+          console.log('StartGame: got team info', info);
+          if (mounted) setFetchedTeam(info);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch team info on StartGame', err?.response?.data || err?.message || err);
+        // If the endpoint is missing (404) or token is not accepted, fall back to JWT teamName if available
+        const status = err?.response?.status;
+        if (status === 404) {
+          console.warn('StartGame: /game/team returned 404 - falling back to JWT teamName');
+        }
+        if (mounted) setFetchedTeam({ teamName: user?.teamName || null, members: [] });
+      }
+    }
+    loadTeam();
+    return () => { mounted = false; };
+  }, [isAuthenticated, user]);
 
   function handleStartGame() {
     navigate('/game');
@@ -84,6 +115,19 @@ export default function StartGame() {
                 Solve encrypted puzzles, scan QR checkpoints, and outsmart the clock.
               </p>
             </>
+          )}
+
+          {/* Team Info - shown when available */}
+          {(fetchedTeam || user?.teamName) && (
+            <div className="mt-8 mb-6 text-left text-sm text-green-200 bg-black/40 border border-green-500/10 p-4 rounded-lg max-w-xl mx-auto">
+              <div className="font-semibold text-lg text-green-300">Team: <span className="text-green-100">{(fetchedTeam && fetchedTeam.teamName) || user?.teamName}</span></div>
+              <div className="mt-2 text-xs text-green-200">Members:</div>
+              <ul className="list-disc pl-5 mt-1 text-sm text-green-100">
+                {((fetchedTeam && fetchedTeam.members) || []).map((m, idx) => (
+                  <li key={idx}>{m?.name || 'Unnamed'}{m?.contact ? ` — ${m.contact}` : ''}</li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {/* Buttons */}

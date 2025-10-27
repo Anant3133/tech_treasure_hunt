@@ -106,11 +106,24 @@ async function getTeamProgressController(req, res) {
   });
 }
 
+// Return basic team info (name and members) for the authenticated team
+async function getTeamInfoController(req, res) {
+  const { teamId } = req.team;
+
+  const team = await findTeamById(teamId);
+  if (!team) return res.status(404).json({ message: 'Team not found' });
+
+  // Only expose non-sensitive fields
+  const { teamName, members } = team;
+  return res.json({ teamName: teamName || null, members: members || [] });
+}
+
 module.exports = {
   getQuestion: getQuestionController,
   submitAnswer: submitAnswerController,
   submitAnswerValidations,
   getTeamProgress: getTeamProgressController,
+  getTeamInfo: getTeamInfoController,
 };
 
 

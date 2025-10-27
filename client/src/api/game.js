@@ -20,4 +20,9 @@ export async function getTeamProgress() {
   return data; // { currentQuestion, finishTime }
 }
 
+export async function getTeamInfo() {
+  const { data } = await api.get('/game/team');
+  return data; // { teamName, members }
+}
+
 

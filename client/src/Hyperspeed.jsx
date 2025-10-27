@@ -1098,19 +1098,105 @@ const Hyperspeed = ({
       return needResize;
     }
 
+    // Robust initialization: wait for container to have non-zero size before creating WebGL renderer.
     (function () {
       const container = document.getElementById('lights');
       const options = { ...effectOptions };
       options.distortion = distortions[options.distortion];
 
-      const myApp = new App(container, options);
-      appRef.current = myApp;
-      myApp.loadAssets().then(myApp.init);
+      let ro = null;
+      let initialized = false;
+
+      const tryInit = () => {
+        if (!container) return;
+        const w = container.offsetWidth;
+        const h = container.offsetHeight;
+        if (w > 0 && h > 0 && !initialized) {
+          try {
+            console.log('Hyperspeed: initializing with size', w, h);
+            const myApp = new App(container, options);
+            appRef.current = myApp;
+            initialized = true;
+            // load assets and init
+            myApp.loadAssets().then(() => {
+              // double-check not disposed
+              if (!myApp.disposed) {
+                console.log('Hyperspeed: assets loaded, calling init');
+                myApp.init();
+                console.log('Hyperspeed: initialized');
+              }
+            }).catch(err => {
+              console.warn('Hyperspeed: loadAssets failed', err);
+            });
+            // stop observing once initialized
+            if (ro) {
+              try { ro.disconnect(); } catch (e) {}
+              ro = null;
+            }
+          } catch (err) {
+            console.warn('Hyperspeed: WebGL init failed, will retry on visibility/resize', err);
+          }
+        }
+      };
+
+      // If container already has size, init immediately
+      tryInit();
+
+      // If not initialized yet, observe size changes and visibility
+      if (!initialized && typeof ResizeObserver !== 'undefined' && container) {
+        ro = new ResizeObserver(() => tryInit());
+        try {
+          ro.observe(container);
+        } catch (e) {
+          ro = null;
+        }
+      }
+
+      const onVisibility = () => {
+        if (document.visibilityState === 'visible') tryInit();
+      };
+      window.addEventListener('visibilitychange', onVisibility);
+
+      // Also try init on first touch (some mobile browsers require interaction)
+      const onFirstTouch = () => {
+        tryInit();
+        window.removeEventListener('touchstart', onFirstTouch);
+      };
+      window.addEventListener('touchstart', onFirstTouch, { passive: true });
+
+      // store cleanup for later
+      appRef.current = appRef.current || null;
+
+      // attach a cleanup handler to remove observers/listeners when effect is torn down
+      const cleanupExtras = () => {
+        if (ro) {
+          try { ro.disconnect(); } catch (e) {}
+          ro = null;
+        }
+        window.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('touchstart', onFirstTouch);
+      };
+
+      // keep a ref so the main return can call it as well
+      if (!appRef.current) appRef._cleanupExtras = cleanupExtras;
+      else appRef._cleanupExtras = cleanupExtras;
     })();
 
     return () => {
+      // call any extra cleanup (resize observer / listeners)
+      try {
+        if (appRef._cleanupExtras) {
+          try { appRef._cleanupExtras(); } catch (e) { console.warn('Hyperspeed: cleanup extras failed', e); }
+        }
+      } catch (e) {}
+
       if (appRef.current) {
-        appRef.current.dispose();
+        try {
+          console.log('Hyperspeed: disposing appRef');
+          appRef.current.dispose();
+        } catch (e) {
+          console.warn('Hyperspeed: dispose failed', e);
+        }
       }
     };
   }, [effectOptions]);
