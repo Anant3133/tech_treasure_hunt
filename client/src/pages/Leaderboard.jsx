@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/http';
 import NavLayout from '../components/NavLayout.jsx';
+import Footer from '../components/Footer.jsx';
 
 export default function Leaderboard() {
   const [rows, setRows] = useState([]);
@@ -19,8 +20,10 @@ export default function Leaderboard() {
   }, []);
 
   return (
-    <NavLayout>
-      <div className="min-h-screen bg-slate-900 text-white px-3 py-4 sm:px-6 md:px-10">
+    <div className="relative min-h-screen bg-black text-green-400 flex flex-col">
+      <main className="flex-grow pb-24">
+      <NavLayout>
+      <div className="min-h-screen bg-black text-white px-3 py-4 sm:px-6 md:px-10">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-lg p-4 sm:p-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6">
             🏆 Leaderboard
@@ -185,5 +188,9 @@ export default function Leaderboard() {
         </div>
       </div>
     </NavLayout>
+      </main>
+      <Footer />
+    </div>
+    
   );
 }

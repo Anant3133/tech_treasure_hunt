@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCurrentQrToken } from '../api/admin';
 import QRCode from 'react-qr-code';
+import Footer from'../components/Footer.jsx';
 
 export default function Admin() {
   const [questionNumber, setQuestionNumber] = useState(1);
@@ -30,7 +31,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-xl p-8">
+        <div className="bg-black border border-slate-700 rounded-2xl shadow-xl p-8">
           <h2 className="text-4xl font-bold text-white mb-8 text-center">
             🔧 Admin QR Station
           </h2>

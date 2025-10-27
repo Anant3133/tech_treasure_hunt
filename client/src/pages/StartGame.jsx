@@ -3,6 +3,7 @@ import { logout } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { getTeamProgress } from '../api/game';
 import NavLayout from '../components/NavLayout.jsx';
+import Footer from '../components/Footer.jsx';
 
 export default function StartGame() {
   const navigate = useNavigate();
@@ -37,9 +38,12 @@ export default function StartGame() {
   const isFinished = teamProgress?.finishTime !== null;
 
   return (
-    <NavLayout>
+    <div className="relative min-h-screen bg-black text-green-400 flex flex-col">
+      <main className="flex-grow pb-24">
+      <NavLayout>
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-black text-green-400 min-h-screen flex flex-col items-center justify-center px-6 py-16">
+        
         {/* Background matrix animation */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,100,0.15),transparent)] animate-pulse"></div>
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dark-mosaic.png')]"></div>
@@ -175,11 +179,19 @@ export default function StartGame() {
       </div>
 
       {/* Footer */}
-      <div className="bg-black text-center py-6 border-t border-green-500/20">
+      <div className="bg-black text-center py-6 ">
         <p className="text-green-500 text-sm tracking-widest uppercase animate-pulse">
           Good luck, Agent. May your code be flawless. 🧠
         </p>
+        
       </div>
+      
+      
     </NavLayout>
+    </main>
+    <Footer/>
+  </div>
+
+    
   );
 }

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getQuestion, submitAnswer, resolveQrToken, getTeamProgress } from '../api/game';
 import QRScanner from '../components/QRScanner.jsx';
 import NavLayout from '../components/NavLayout.jsx';
+import Footer from '../components/Footer.jsx';
+
 
 export default function Game() {
   const navigate = useNavigate();
@@ -110,7 +112,9 @@ export default function Game() {
   }
 
   return (
-    <NavLayout>
+    <div className="relative min-h-screen bg-black text-green-400 flex flex-col">
+      <main className="flex-grow pb-24">
+      <NavLayout>
       <div className="max-w-4xl mx-auto p-2 sm:p-4 md:p-6">
         <div className="bg-slate-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-slate-700">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
@@ -184,8 +188,16 @@ export default function Game() {
             <p className="text-blue-300 text-lg text-center font-medium">{status}</p>
           </div>
         )}
+        
       </div>
+      
+      
     </NavLayout>
+
+      </main>
+      <Footer/>
+    </div>
+    
   );
 }
 
