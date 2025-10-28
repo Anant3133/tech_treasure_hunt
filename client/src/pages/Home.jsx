@@ -188,7 +188,10 @@ export default function Home() {
             transition={{ duration: 0.7 }}
             className="text-3xl sm:text-4xl font-extrabold text-center text-white mb-3 drop-shadow-md"
           >
-            Tech Treasure Hunt
+            <span className="inline-flex items-center justify-center gap-3">
+              <img src="/devcommlogo.png" alt="DevComm logo" className="w-9 h-9 sm:w-11 sm:h-11 rounded-md object-contain" />
+              <span>Hack n Seek</span>
+            </span>
           </motion.h1>
 
           {/* Show current logged-in team info (if available) */}
