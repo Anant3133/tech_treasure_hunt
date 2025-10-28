@@ -346,7 +346,3 @@ No automated tests included. Consider adding:
 If something breaks or you want a walkthrough, open an issue or contact the repository owner/maintainer.
 
 ---
-
-## License
-
-Specify your license here (e.g., MIT). If you want me to add a license file, tell me which license you'd like and I can add `LICENSE.md`.
