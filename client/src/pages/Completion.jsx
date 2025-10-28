@@ -2,29 +2,47 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/http';
 import { FaTrophy, FaMedal, FaSpinner } from 'react-icons/fa';
+import { useAuth } from '../App.jsx';
+import { decodeJWT } from '../api/utils';
 
 export default function Completion() {
   const [rank, setRank] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     async function fetchRank() {
       try {
         const res = await api.get('/leaderboard');
-        const teamName = localStorage.getItem('team_name');
-        if (res.data && Array.isArray(res.data)) {
+        
+        // Get team name from auth context or decode from JWT
+        let teamName = user?.teamName;
+        if (!teamName) {
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            const decoded = decodeJWT(token);
+            teamName = decoded?.teamName;
+          }
+        }
+        
+        console.log('Completion: Looking for team:', teamName);
+        console.log('Completion: Leaderboard data:', res.data);
+        
+        if (res.data && Array.isArray(res.data) && teamName) {
           const idx = res.data.findIndex(t => t.teamName === teamName);
+          console.log('Completion: Found at index:', idx);
           if (idx !== -1) setRank(idx + 1);
         }
       } catch (e) {
+        console.error('Completion: Error fetching rank:', e);
         setRank(null);
       } finally {
         setLoading(false);
       }
     }
     fetchRank();
-  }, []);
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-900 to-green-700">
