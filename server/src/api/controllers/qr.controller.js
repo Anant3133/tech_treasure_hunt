@@ -1,5 +1,5 @@
 const { verifyToken } = require('../services/qr.service');
-const { findTeamById, getQuestion, updateTeamProgress } = require('../services/firestore.service');
+const { findTeamById, getQuestion, updateTeamProgress, getTotalQuestionCount } = require('../services/firestore.service');
 
 async function resolveToken(req, res) {
   const { token } = req.params;
@@ -26,7 +26,10 @@ async function resolveToken(req, res) {
 
   const nextQuestionNumber = q + 1;
   const now = new Date();
-  const isLastQuestion = q >= 10;
+  
+  // Get total question count to dynamically determine if this is the last question
+  const totalQuestions = await getTotalQuestionCount();
+  const isLastQuestion = q >= totalQuestions;
   
   const updates = {
     currentQuestion: isLastQuestion ? q : nextQuestionNumber,

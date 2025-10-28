@@ -6,6 +6,7 @@ import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../App.jsx';
 import { getTeamInfo } from '../api/game';
+import { FaUsers, FaPhone, FaPlay, FaCheckCircle, FaTrophy } from 'react-icons/fa';
 
 export default function StartGame() {
   const navigate = useNavigate();
@@ -121,19 +122,25 @@ export default function StartGame() {
           {(fetchedTeam || user?.teamName) && (
             <div className="mt-10 mb-8 text-left text-sm bg-gradient-to-br from-black/60 via-gray-900/40 to-black/60 border border-green-400/20 p-6 rounded-2xl max-w-xl mx-auto shadow-[0_0_20px_rgba(34,197,94,0.15)] backdrop-blur-md transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(rgba(20, 220, 80, 0.25)] animate-fadein">
             <div className="font-semibold text-lg text-green-300 flex items-center gap-2">
-              <span className="text-emerald-400/90">🧩 Team:</span>
+              <FaUsers className="text-emerald-400/90" />
+              <span className="text-emerald-400/90">Team:</span>
               <span className="text-green-100 font-bold tracking-wide">
                 {(fetchedTeam && fetchedTeam.teamName) || user?.teamName}
               </span>
             </div>
           
-            <div className="mt-4 text-xs uppercase text-green-400/70 tracking-wider">Members</div>
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-green-100/90">
+            <div className="mt-4 text-xs uppercase text-green-400/70 tracking-wider flex items-center gap-1">
+              <FaUsers className="text-sm" /> Members
+            </div>
+            <ul className="list-none pl-5 mt-2 space-y-1 text-sm text-green-100/90">
               {((fetchedTeam && fetchedTeam.members) || []).map((m, idx) => (
-                <li key={idx} className="hover:text-emerald-300 transition-colors duration-200">
-                  {m?.name || 'Unnamed'}
+                <li key={idx} className="hover:text-emerald-300 transition-colors duration-200 flex items-center gap-2">
+                  <span>•</span>
+                  <span>{m?.name || 'Unnamed'}</span>
                   {m?.contact ? (
-                    <span className="text-green-400/70"> :{m.contact}</span>
+                    <span className="text-green-400/70 flex items-center gap-1">
+                      <FaPhone className="text-xs" /> {m.contact}
+                    </span>
                   ) : null}
                 </li>
               ))}
@@ -149,23 +156,23 @@ export default function StartGame() {
                 <>
                   <button
                     onClick={() => navigate('/completion')}
-                    className="px-8 py-4 text-lg font-bold rounded-xl border border-yellow-500 text-yellow-300 bg-black hover:bg-yellow-500/10 transition-all duration-200 shadow-[0_0_15px_#ffdd00] hover:shadow-[0_0_25px_#ffdd00] hover:scale-105"
+                    className="px-8 py-4 text-lg font-bold rounded-xl border border-yellow-500 text-yellow-300 bg-black hover:bg-yellow-500/10 transition-all duration-200 shadow-[0_0_15px_#ffdd00] hover:shadow-[0_0_25px_#ffdd00] hover:scale-105 flex items-center gap-2"
                   >
-                    ✅ Hunt Completed
+                    <FaCheckCircle /> Hunt Completed
                   </button>
                   <button
                     onClick={() => navigate('/leaderboard')}
-                    className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105"
+                    className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105 flex items-center gap-2"
                   >
-                    🏆 View Leaderboard
+                    <FaTrophy /> View Leaderboard
                   </button>
                 </>
               ) : (
                 <button
                   onClick={handleStartGame}
-                  className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105"
+                  className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105 flex items-center gap-2"
                 >
-                  {hasStarted ? '▶ Continue Hunt' : '🚀 Start Game'}
+                  <FaPlay /> {hasStarted ? 'Continue Hunt' : 'Start Game'}
                 </button>
               )}
 

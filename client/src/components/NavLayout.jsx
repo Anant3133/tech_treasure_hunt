@@ -10,7 +10,6 @@ export default function NavLayout({ children }) {
   const navLinks = [
     { name: 'Home', path: '/start-game' },
     { name: 'Game', path: '/game' },
-    { name: 'Leaderboard', path: '/leaderboard' },
   ];
 
   return (
@@ -51,7 +50,7 @@ export default function NavLayout({ children }) {
           </div>
         </div>
 
-        {/* Right: Mobile hamburger + Logout */}
+        {/* Right: Mobile hamburger */}
         <div className="flex-shrink-0 flex items-center gap-4">
           {/* Mobile hamburger */}
           <div className="md:hidden">
@@ -65,16 +64,6 @@ export default function NavLayout({ children }) {
               </svg>
             </button>
           </div>
-
-          {/* Logout Button for desktop */}
-          <motion.button
-            onClick={handleLogout}
-            whileHover={{ scale: 1.05, textShadow: '0 0 8px #39FF14' }}
-            transition={{ duration: 0.3 }}
-            className="hidden md:inline text-red-400 hover:text-red-300 font-semibold underline"
-          >
-            Logout
-          </motion.button>
         </div>
       </nav>
 
@@ -84,7 +73,6 @@ export default function NavLayout({ children }) {
           {navLinks.map(link => (
             <Link key={link.name} to={link.path} className="text-white font-semibold py-2 border-b border-slate-700">{link.name}</Link>
           ))}
-          <button onClick={handleLogout} className="mt-2 text-red-400">Logout</button>
         </div>
       </div>
 

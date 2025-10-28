@@ -4,6 +4,7 @@ import { getQuestion, submitAnswer, resolveQrToken, getTeamProgress } from '../a
 import QRScanner from '../components/QRScanner.jsx';
 import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
+import { FaLightbulb, FaPaperPlane, FaQrcode, FaTimes, FaSpinner } from 'react-icons/fa';
 
 
 export default function Game() {
@@ -133,9 +134,8 @@ export default function Game() {
                 placeholder="Your answer" 
                 autoComplete="off"
               />
-              <button className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-400 hover:from-green-500 hover:to-green-300 text-black px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-[0_0_15px_rgba(20,255,50,0.6)] hover:shadow-[0_0_30px_rgba(15,230,50,0.9)] transition-all duration-300 whitespace-nowrap
-">
-                Submit
+              <button className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-400 hover:from-green-500 hover:to-green-300 text-black px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-[0_0_15px_rgba(20,255,50,0.6)] hover:shadow-[0_0_30px_rgba(15,230,50,0.9)] transition-all duration-300 whitespace-nowrap flex items-center justify-center gap-2">
+                <FaPaperPlane /> Submit
               </button>
             </div>
           </form>
@@ -143,7 +143,9 @@ export default function Game() {
 
         {hint && (
           <div className="bg-yellow-900/30 border-2 border-yellow-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <div className="font-bold text-yellow-400 mb-2 text-lg">💡 Hint</div>
+            <div className="font-bold text-yellow-400 mb-2 text-lg flex items-center gap-2">
+              <FaLightbulb className="text-xl" /> Hint
+            </div>
             <div className="text-yellow-300 text-lg">{hint}</div>
           </div>
         )}
@@ -151,15 +153,17 @@ export default function Game() {
         <div className="flex flex-col items-center gap-3 sm:gap-4 mb-4 sm:mb-6 w-full">
           {!showScanner && canScan && (
             <button
-              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg"
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg flex items-center justify-center gap-2"
               onClick={() => setShowScanner(true)}
             >
-              Start Scanning
+              <FaQrcode /> Start Scanning
             </button>
           )}
           {showScanner && (
             <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-xl p-4 sm:p-6 w-full max-w-xs sm:max-w-md">
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 text-center">📱 Scan QR Code</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 text-center flex items-center justify-center gap-2">
+                <FaQrcode /> Scan QR Code
+              </h3>
               <QRScanner
                 modal={false}
                 onScan={handleQrTokenScanned}
@@ -167,10 +171,10 @@ export default function Game() {
                 onClose={() => setShowScanner(false)}
               />
               <button
-                className="mt-3 sm:mt-4 w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+                className="mt-3 sm:mt-4 w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2"
                 onClick={() => setShowScanner(false)}
               >
-                Close Scanner
+                <FaTimes /> Close Scanner
               </button>
               <p className="text-xs sm:text-sm text-slate-400 mt-3 sm:mt-4 text-center">
                 Scan the on-site QR code to advance to the next question.
@@ -181,7 +185,7 @@ export default function Game() {
 
         {questionLoading && (
           <div className="flex justify-center items-center py-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mr-3"></div>
+            <FaSpinner className="animate-spin h-8 w-8 text-blue-400 mr-3" />
             <span className="text-blue-300 text-lg">Loading question...</span>
           </div>
         )}

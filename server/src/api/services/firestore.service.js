@@ -48,7 +48,14 @@ async function findTeamById(teamId) {
 }
 
 async function getQuestion(questionNumber) {
-  const snapshot = await getQuestionsCollection().where('questionNumber', '==', Number(questionNumber)).limit(1).get();
+  // Try to find the question by number (handle both string and number types in DB)
+  let snapshot = await getQuestionsCollection().where('questionNumber', '==', Number(questionNumber)).limit(1).get();
+  
+  // If not found as number, try as string
+  if (snapshot.empty) {
+    snapshot = await getQuestionsCollection().where('questionNumber', '==', String(questionNumber)).limit(1).get();
+  }
+  
   if (snapshot.empty) return null;
   const doc = snapshot.docs[0];
   return { id: doc.id, ...doc.data() };
@@ -58,8 +65,17 @@ async function getQuestion(questionNumber) {
 async function createOrUpdateQuestion(questionData) {
   const data = toPlainIfNeeded(questionData);
   if (!data || typeof data.questionNumber === 'undefined') throw new Error('questionNumber required');
+  
+  // Normalize questionNumber to number for consistency
+  data.questionNumber = Number(data.questionNumber);
+  
   // Check for duplicate questionNumber (other than self)
-  const snapshot = await getQuestionsCollection().where('questionNumber', '==', Number(data.questionNumber)).get();
+  // Check both number and string versions for backward compatibility
+  let snapshot = await getQuestionsCollection().where('questionNumber', '==', data.questionNumber).get();
+  if (snapshot.empty) {
+    snapshot = await getQuestionsCollection().where('questionNumber', '==', String(data.questionNumber)).get();
+  }
+  
   if (!snapshot.empty) {
     // If updating, allow if id matches
     if (!data.id || snapshot.docs.some(doc => doc.id !== data.id)) {

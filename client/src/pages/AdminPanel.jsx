@@ -5,6 +5,7 @@ import { useAuth } from '../App.jsx';
 import { getCurrentQrToken } from '../api/admin';
 import api from '../api/http';
 import QRCode from 'react-qr-code';
+import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal } from 'react-icons/fa';
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,6 +23,7 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('qr');
   const [questions, setQuestions] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [questionError, setQuestionError] = useState(null);
   const [qrQuestionNumber, setQrQuestionNumber] = useState(1);
   const [qrToken, setQrToken] = useState('');
@@ -38,6 +40,19 @@ export default function AdminPanel() {
     answer: '',
     hint: ''
   });
+
+  // Register team form state
+  const [registerForm, setRegisterForm] = useState({
+    teamName: '',
+    password: '',
+    members: [
+      { name: '', contact: '' },
+      { name: '', contact: '' },
+      { name: '', contact: '' },
+      { name: '', contact: '' },
+    ]
+  });
+  const [registerError, setRegisterError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -65,9 +80,10 @@ export default function AdminPanel() {
 
   const loadAdminData = async () => {
     try {
-      const [questionsRes, teamsRes] = await Promise.all([
+      const [questionsRes, teamsRes, leaderboardRes] = await Promise.all([
         api.get('/admin/questions'),
-        api.get('/admin/teams')
+        api.get('/admin/teams'),
+        api.get('/leaderboard')
       ]);
   // Remove duplicate questionNumbers, keep only the first occurrence
   const seen = new Set();
@@ -80,6 +96,7 @@ export default function AdminPanel() {
     });
   setQuestions(deduped);
       setTeams(teamsRes.data);
+      setLeaderboard(leaderboardRes.data);
     } catch (error) {
       console.error('Failed to load admin data:', error);
     }
@@ -244,6 +261,48 @@ export default function AdminPanel() {
     }
   };
 
+  const handleRegisterTeam = async (e) => {
+    e.preventDefault();
+    setRegisterError(null);
+    
+    if (registerForm.password.length < 6) {
+      setRegisterError('Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    const validMembers = registerForm.members.filter(m => m.name.trim() && m.contact.trim());
+    if (validMembers.length < 2) {
+      setRegisterError('Please enter at least 2 team members with name and contact.');
+      toast.error('Please enter at least 2 team members with name and contact.');
+      return;
+    }
+    
+    try {
+      await register({ 
+        teamName: registerForm.teamName, 
+        password: registerForm.password, 
+        members: validMembers 
+      });
+      toast.success('Team registered successfully!');
+      setRegisterForm({
+        teamName: '',
+        password: '',
+        members: [
+          { name: '', contact: '' },
+          { name: '', contact: '' },
+          { name: '', contact: '' },
+          { name: '', contact: '' },
+        ]
+      });
+      loadAdminData();
+    } catch (error) {
+      const msg = error?.response?.data?.message || 'Failed to register team';
+      setRegisterError(msg);
+      toast.error(msg);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -326,9 +385,9 @@ export default function AdminPanel() {
           <h1 className="text-2xl font-bold text-white">🔧 Admin Panel</h1>
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
-            Logout
+            <FaSignOutAlt /> Logout
           </button>
         </div>
       </div>
@@ -336,16 +395,18 @@ export default function AdminPanel() {
       {/* Navigation Tabs */}
       <div className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex space-x-8">
+          <nav className="flex space-x-8 overflow-x-auto">
             {[
-              { id: 'qr', label: 'QR Codes', icon: '📱' },
-              { id: 'questions', label: 'Questions', icon: '❓' },
-              { id: 'teams', label: 'Teams', icon: '👥' }
+              { id: 'qr', label: 'QR Codes', icon: <FaQrcode /> },
+              { id: 'questions', label: 'Questions', icon: <FaQuestionCircle /> },
+              { id: 'teams', label: 'Teams', icon: <FaUsers /> },
+              { id: 'register', label: 'Register Team', icon: <FaUserPlus /> },
+              { id: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy /> }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-2 ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-400'
                     : 'border-transparent text-slate-400 hover:text-slate-300'
@@ -372,9 +433,12 @@ export default function AdminPanel() {
                   value={qrQuestionNumber}
                   onChange={(e) => setQrQuestionNumber(Number(e.target.value) || 1)}
                   min={1}
-                  max={10}
+                  max={questions.length || 10}
                   className="bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                <span className="text-sm text-slate-400">
+                  (Max: {questions.length || 10} questions)
+                </span>
               </div>
               
               <div className="bg-slate-700 rounded-lg p-6 text-center">
@@ -392,7 +456,8 @@ export default function AdminPanel() {
                     </div>
                   )}
                 </div>
-                <p className="text-slate-300">
+                <p className="text-slate-300 flex items-center justify-center gap-2">
+                  <FaClock className="text-blue-400" />
                   QR expires in: <span className="font-bold text-blue-400">{qrCountdown}</span> seconds
                   {" "}
                   <span className="text-slate-400 text-xs">(auto-refreshes every {qrTtl} seconds)</span>
@@ -486,9 +551,9 @@ export default function AdminPanel() {
                       <div className="flex flex-col gap-2 items-end">
                         <button
                           onClick={() => handleDeleteQuestion(q.id, q.questionNumber)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
                         >
-                          Delete
+                          <FaTrash /> Delete
                         </button>
                         <span className="text-xs text-slate-400 select-none">Drag to reorder</span>
                       </div>
@@ -540,6 +605,145 @@ export default function AdminPanel() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'register' && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4">Register New Team</h2>
+            
+            <form onSubmit={handleRegisterTeam} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={registerForm.teamName}
+                  onChange={(e) => setRegisterForm({...registerForm, teamName: e.target.value})}
+                  placeholder="Team Name"
+                  className="bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="password"
+                  value={registerForm.password}
+                  onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
+                  placeholder="Password (min 6 characters)"
+                  className="bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <label className="block text-slate-300 text-sm font-semibold">
+                  Team Members (min 2, max 4):
+                </label>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={registerForm.members[i].name}
+                      onChange={e => setRegisterForm({
+                        ...registerForm,
+                        members: registerForm.members.map((m, idx) => 
+                          idx === i ? { ...m, name: e.target.value } : m
+                        )
+                      })}
+                      placeholder={`Member ${i + 1} Name${i < 2 ? ' *' : ''}`}
+                      className="bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required={i < 2}
+                    />
+                    <input
+                      type="text"
+                      value={registerForm.members[i].contact}
+                      onChange={e => setRegisterForm({
+                        ...registerForm,
+                        members: registerForm.members.map((m, idx) => 
+                          idx === i ? { ...m, contact: e.target.value } : m
+                        )
+                      })}
+                      placeholder={`Contact${i < 2 ? ' *' : ''}`}
+                      className="bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required={i < 2}
+                    />
+                  </div>
+                ))}
+                <p className="text-xs text-slate-400">
+                  * Required. Enter at least 2 members with name and contact.
+                </p>
+              </div>
+              
+              <button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Register Team
+              </button>
+              
+              {registerError && (
+                <div className="bg-red-900/30 border-2 border-red-600 rounded-xl p-3">
+                  <p className="text-red-300 text-center text-sm">{registerError}</p>
+                </div>
+              )}
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4">🏆 Leaderboard</h2>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-slate-600">
+                    <th className="text-left py-3 px-4 text-slate-300 font-bold">Rank</th>
+                    <th className="text-left py-3 px-4 text-slate-300 font-bold">Team Name</th>
+                    <th className="text-left py-3 px-4 text-slate-300 font-bold">Progress</th>
+                    <th className="text-left py-3 px-4 text-slate-300 font-bold">Status</th>
+                    <th className="text-left py-3 px-4 text-slate-300 font-bold">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((team, idx) => (
+                    <tr 
+                      key={team.id} 
+                      className={`border-b border-slate-700 ${
+                        idx === 0 ? 'bg-yellow-900/20' : 
+                        idx === 1 ? 'bg-slate-700/30' : 
+                        idx === 2 ? 'bg-orange-900/20' : ''
+                      }`}
+                    >
+                      <td className="py-3 px-4 text-white font-bold">
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                      </td>
+                      <td className="py-3 px-4 text-white font-medium">{team.teamName}</td>
+                      <td className="py-3 px-4 text-slate-300">
+                        Question {team.currentQuestion || 1}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          team.finishTime 
+                            ? 'bg-green-900/30 text-green-400' 
+                            : 'bg-blue-900/30 text-blue-400'
+                        }`}>
+                          {team.finishTime ? '✅ Completed' : '⏳ In Progress'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-300 text-sm">
+                        {team.finishTime 
+                          ? new Date(team.finishTime.seconds ? team.finishTime.seconds * 1000 : team.finishTime).toLocaleString()
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {leaderboard.length === 0 && (
+                <div className="text-center py-8 text-slate-400">
+                  No teams registered yet
+                </div>
+              )}
             </div>
           </div>
         )}

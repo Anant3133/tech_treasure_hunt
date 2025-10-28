@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
@@ -10,19 +9,13 @@ import { useAuth } from '../App.jsx';
 import { decodeJWT } from '../api/utils';
 import Hyperspeed from '../Hyperspeed'; // ✅ Replace LetterGlitch with Hyperspeed
 import { getTeamInfo } from '../api/game';
+import { FaUsers, FaPhone, FaSignInAlt } from 'react-icons/fa';
 
 export default function Home() {
 
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState('login');
   const [error, setError] = useState(null);
-  const [members, setMembers] = useState([
-    { name: '', contact: '' },
-    { name: '', contact: '' },
-    { name: '', contact: '' },
-    { name: '', contact: '' },
-  ]);
   const [showHyperspeed, setShowHyperspeed] = useState(false);
   const [fetchedTeam, setFetchedTeam] = useState(null);
   const navigate = useNavigate();
@@ -104,33 +97,15 @@ export default function Home() {
       return;
     }
     try {
-      if (mode === 'register') {
-        // Validate at least 2 members with name and contact
-        const validMembers = members.filter(m => m.name.trim() && m.contact.trim());
-        if (validMembers.length < 2) {
-          setError('Please enter at least 2 team members with name and contact.');
-          return;
-        }
-        let response = await register({ teamName, password, members: validMembers });
-        if (response?.token) {
-          authLogin(response.token);
-          toast.success('Registration successful');
-          navigate('/start-game');
-        } else {
-          setError('Registration failed: No token received');
-          toast.error('Registration failed: No token received');
-        }
+      let response = await login(teamName, password);
+      if (response?.token) {
+        authLogin(response.token);
+        toast.success('Login successful');
+        const decoded = decodeJWT(response.token);
+        navigate(decoded?.role === 'admin' ? '/admin-panel' : '/start-game');
       } else {
-        let response = await login(teamName, password);
-        if (response?.token) {
-          authLogin(response.token);
-          toast.success('Login successful');
-          const decoded = decodeJWT(response.token);
-          navigate(decoded?.role === 'admin' ? '/admin-panel' : '/start-game');
-        } else {
-          setError('No token received');
-          toast.error('No token received');
-        }
+        setError('No token received');
+        toast.error('No token received');
       }
     } catch (e) {
       const msg = e?.response?.data?.message || 'Auth failed';
@@ -222,11 +197,24 @@ export default function Home() {
           {/* Show current logged-in team info (if available) */}
           {fetchedTeam && (
             <div className="mt-2 mb-4 text-left text-sm text-white/90 bg-white/5 border border-white/10 p-3 rounded-lg">
-              <div className="font-semibold">Team: <span className="text-indigo-200">{fetchedTeam.teamName || user?.teamName}</span></div>
-              <div className="mt-2 text-xs text-slate-200">Members:</div>
-              <ul className="list-disc pl-5 mt-1 text-xs text-slate-100">
+              <div className="font-semibold flex items-center gap-2">
+                <FaUsers className="text-indigo-300" />
+                Team: <span className="text-indigo-200">{fetchedTeam.teamName || user?.teamName}</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-200 flex items-center gap-1">
+                <FaUsers className="text-xs" /> Members:
+              </div>
+              <ul className="list-none pl-5 mt-1 text-xs text-slate-100">
                 {(fetchedTeam.members || []).map((m, idx) => (
-                  <li key={idx}>{m?.name || 'Unnamed'}{m?.contact ? ` — ${m.contact}` : ''}</li>
+                  <li key={idx} className="flex items-center gap-2">
+                    <span>•</span>
+                    {m?.name || 'Unnamed'}
+                    {m?.contact ? (
+                      <span className="flex items-center gap-1 text-slate-300">
+                        <FaPhone className="text-xs" /> {m.contact}
+                      </span>
+                    ) : ''}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -271,41 +259,10 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="submit"
-              className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-semibold py-2.5 rounded-md shadow-lg tracking-wide transition-all"
+              className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-semibold py-2.5 rounded-md shadow-lg tracking-wide transition-all flex items-center justify-center gap-2"
             >
-              {mode === 'login' ? 'Login' : 'Register'}
+              <FaSignInAlt /> Login
             </motion.button>
-
-            {mode === 'register' && (
-              <div className="space-y-2">
-                <label className="block text-slate-300 text-sm font-semibold mb-1">
-                  Team Members (min 2, max 4):
-                </label>
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} className="flex flex-col sm:flex-row gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={members[i].name}
-                      onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, name: e.target.value } : mem))}
-                      placeholder={`Member ${i + 1} Name${i < 2 ? ' *' : ''}`}
-                      className="w-full sm:w-1/2 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required={i < 2}
-                    />
-                    <input
-                      type="text"
-                      value={members[i].contact}
-                      onChange={e => setMembers(m => m.map((mem, idx) => idx === i ? { ...mem, contact: e.target.value } : mem))}
-                      placeholder={`Contact${i < 2 ? ' *' : ''}`}
-                      className="w-full sm:w-1/2 bg-slate-700 border border-slate-600 px-3 py-2 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required={i < 2}
-                    />
-                  </div>
-                ))}
-                <p className="text-xs text-slate-400">
-                  * Required. Enter at least 2 members with name and contact.
-                </p>
-              </div>
-            )}
           </motion.form>
 
           <motion.div
@@ -314,12 +271,9 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <button
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-white/80 hover:text-white underline text-xs tracking-wide transition-colors"
-            >
-              {mode === 'login' ? 'Create new team' : 'Have an account? Login'}
-            </button>
+            <p className="text-white/70 text-xs">
+              Don't have an account? Contact admin to register your team.
+            </p>
           </motion.div>
 
           {error && (

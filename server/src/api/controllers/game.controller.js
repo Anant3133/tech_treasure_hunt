@@ -15,7 +15,10 @@ async function getQuestionController(req, res) {
   const team = await findTeamById(teamId);
   if (!team) return res.status(404).json({ message: 'Team not found' });
 
+  console.log(`[getQuestion] Team ${team.teamName} requesting Q${questionNumber}, currentQuestion: ${team.currentQuestion}`);
+
   if (Number(team.currentQuestion) !== Number(questionNumber)) {
+    console.log(`[getQuestion] Forbidden: team.currentQuestion=${team.currentQuestion}, requested=${questionNumber}`);
     return res.status(403).json({ message: 'Forbidden: Not your current question' });
   }
 
@@ -23,9 +26,13 @@ async function getQuestionController(req, res) {
   let question = questionCache.get(String(questionNumber));
   if (!question) {
     question = await getQuestion(questionNumber);
-    if (!question) return res.status(404).json({ message: 'Question not found' });
+    if (!question) {
+      console.log(`[getQuestion] Question ${questionNumber} not found in database`);
+      return res.status(404).json({ message: 'Question not found' });
+    }
     questionCache.set(String(questionNumber), question);
   }
+  console.log(`[getQuestion] Returning Q${questionNumber} to team ${team.teamName}`);
   return res.json({ questionNumber: question.questionNumber, text: question.text });
 }
 
@@ -84,15 +91,15 @@ async function submitAnswerController(req, res) {
     awaitingQrScanForQuestion: currentQuestionNumber,
   });
 
-  // Get the next question's hint
-  const nextQuestion = await getQuestion(nextQuestionNumber);
+  // Return the CURRENT question's hint (to help find the QR code for this question)
+  // The hint should guide them to the QR location for the question they just answered
   
   return res.json({
     correct: true,
     finished: false,
     requiresQrScan: true,
     qrForQuestion: currentQuestionNumber,
-    nextHint: nextQuestion ? nextQuestion.hint : null,
+    nextHint: question.hint || null, // Use current question's hint, not next question
     currentQuestion: currentQuestionNumber,
   });
 }
