@@ -73,7 +73,7 @@ export default function StartGame() {
       <main className="flex-grow pb-24">
       <NavLayout>
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-black text-green-400 min-h-screen flex flex-col items-center justify-center px-6 py-16">
+      <div className="relative overflow-hidden bg-black text-green-400 min-h-screen flex flex-col items-center justify-center h-screen">
         
         {/* Background matrix animation */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,100,0.15),transparent)] animate-pulse"></div>
@@ -86,7 +86,7 @@ export default function StartGame() {
               <h1 className="text-5xl font-bold text-green-400 mb-4 tracking-wider">
                 Loading...
               </h1>
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-5 border-green-400 mx-auto"></div>
             </div>
           ) : isFinished ? (
             <>
@@ -119,15 +119,27 @@ export default function StartGame() {
 
           {/* Team Info - shown when available */}
           {(fetchedTeam || user?.teamName) && (
-            <div className="mt-8 mb-6 text-left text-sm text-green-200 bg-black/40 border border-green-500/10 p-4 rounded-lg max-w-xl mx-auto">
-              <div className="font-semibold text-lg text-green-300">Team: <span className="text-green-100">{(fetchedTeam && fetchedTeam.teamName) || user?.teamName}</span></div>
-              <div className="mt-2 text-xs text-green-200">Members:</div>
-              <ul className="list-disc pl-5 mt-1 text-sm text-green-100">
-                {((fetchedTeam && fetchedTeam.members) || []).map((m, idx) => (
-                  <li key={idx}>{m?.name || 'Unnamed'}{m?.contact ? ` — ${m.contact}` : ''}</li>
-                ))}
-              </ul>
+            <div className="mt-10 mb-8 text-left text-sm bg-gradient-to-br from-black/60 via-gray-900/40 to-black/60 border border-green-400/20 p-6 rounded-2xl max-w-xl mx-auto shadow-[0_0_20px_rgba(34,197,94,0.15)] backdrop-blur-md transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(rgba(20, 220, 80, 0.25)] animate-fadein">
+            <div className="font-semibold text-lg text-green-300 flex items-center gap-2">
+              <span className="text-emerald-400/90">🧩 Team:</span>
+              <span className="text-green-100 font-bold tracking-wide">
+                {(fetchedTeam && fetchedTeam.teamName) || user?.teamName}
+              </span>
             </div>
+          
+            <div className="mt-4 text-xs uppercase text-green-400/70 tracking-wider">Members</div>
+            <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-green-100/90">
+              {((fetchedTeam && fetchedTeam.members) || []).map((m, idx) => (
+                <li key={idx} className="hover:text-emerald-300 transition-colors duration-200">
+                  {m?.name || 'Unnamed'}
+                  {m?.contact ? (
+                    <span className="text-green-400/70"> :{m.contact}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
           )}
 
           {/* Buttons */}
