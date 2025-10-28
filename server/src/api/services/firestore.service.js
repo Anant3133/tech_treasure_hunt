@@ -100,6 +100,11 @@ async function listQuestions() {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+async function getTotalQuestionCount() {
+  const snapshot = await getQuestionsCollection().get();
+  return snapshot.size;
+}
+
 async function updateTeamProgress(teamId, updates) {
   const data = toPlainIfNeeded(updates);
   await getTeamsCollection().doc(teamId).update(data);
@@ -149,6 +154,7 @@ module.exports = {
   deleteQuestionByNumber,
   deleteQuestionById,
   listQuestions,
+  getTotalQuestionCount,
   updateTeamProgress,
   getAllTeamsSorted,
 };

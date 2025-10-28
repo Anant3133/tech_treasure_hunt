@@ -34,8 +34,27 @@ export default function Home() {
       smooth: true,
       multiplier: 1.1,
     });
+    // Feature-detect WebGL before attempting Hyperspeed; some phones disable
+    // WebGL or block contexts until user interaction. We check support first
+    // and only enable the canvas mount when available.
+    function supportsWebGL() {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        return !!gl;
+      } catch (e) { return false; }
+    }
+
     // Delay Hyperspeed render to next tick to ensure DOM is ready
-    const t = setTimeout(() => setShowHyperspeed(true), 0);
+    const t = setTimeout(() => {
+      if (supportsWebGL()) {
+        console.log('Home: WebGL supported — mounting Hyperspeed');
+        setShowHyperspeed(true);
+      } else {
+        console.warn('Home: WebGL not supported — using CSS fallback');
+        setShowHyperspeed(false);
+      }
+    }, 0);
 
     // Retry mounting Hyperspeed on visibilitychange, resize or touchstart (mobile browsers sometimes block initial render)
     const tryMount = () => {
@@ -127,7 +146,7 @@ export default function Home() {
     >
       {/* 🌌 Hyperspeed Background (replaces LetterGlitch) */}
       <div className="absolute inset-0 -z-10">
-        {showHyperspeed && (
+        {showHyperspeed ? (
           <Hyperspeed
             effectOptions={{
               onSpeedUp: () => {},
@@ -167,6 +186,12 @@ export default function Home() {
               }
             }}
           />
+        ) : (
+          // CSS fallback for devices without WebGL or when Hyperspeed disabled
+          <div className="w-full h-full bg-gradient-to-b from-black via-slate-900 to-black" aria-hidden>
+            {/* subtle animated gradient */}
+            <div className="absolute inset-0 opacity-40 animate-pulse bg-gradient-to-r from-indigo-900 via-black to-slate-900" />
+          </div>
         )}
       </div>
 

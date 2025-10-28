@@ -44,7 +44,24 @@ const Hyperspeed = ({
   const hyperspeed = useRef(null);
   const appRef = useRef(null);
 
+  // Quick runtime WebGL availability check. Note: some browsers (esp. mobile) may
+  // report context support but still fail during actual renderer init. We keep
+  // init attempts guarded and logged.
+  function supportsWebGL() {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      return !!gl;
+    } catch (e) {
+      return false;
+    }
+  }
+
   useEffect(() => {
+    if (!supportsWebGL()) {
+      console.warn('Hyperspeed: WebGL not available on this device/browser — skipping initialization');
+      return () => {};
+    }
     if (appRef.current) {
       appRef.current.dispose();
       const container = document.getElementById('lights');

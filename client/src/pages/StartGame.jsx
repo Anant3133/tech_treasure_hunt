@@ -146,12 +146,20 @@ export default function StartGame() {
           {!loading && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-10">
               {isFinished ? (
-                <button
-                  onClick={() => navigate('/leaderboard')}
-                  className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105"
-                >
-                  🏆 View Leaderboard
-                </button>
+                <>
+                  <button
+                    onClick={() => navigate('/completion')}
+                    className="px-8 py-4 text-lg font-bold rounded-xl border border-yellow-500 text-yellow-300 bg-black hover:bg-yellow-500/10 transition-all duration-200 shadow-[0_0_15px_#ffdd00] hover:shadow-[0_0_25px_#ffdd00] hover:scale-105"
+                  >
+                    ✅ Hunt Completed
+                  </button>
+                  <button
+                    onClick={() => navigate('/leaderboard')}
+                    className="px-8 py-4 text-lg font-bold rounded-xl border border-green-500 text-green-300 bg-black hover:bg-green-500/10 transition-all duration-200 shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_25px_#00ff99] hover:scale-105"
+                  >
+                    🏆 View Leaderboard
+                  </button>
+                </>
               ) : (
                 <button
                   onClick={handleStartGame}

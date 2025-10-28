@@ -4,6 +4,7 @@ const {
   findTeamById,
   getQuestion,
   updateTeamProgress,
+  getTotalQuestionCount,
 } = require('../services/firestore.service');
 const questionCache = require('../services/questionCache');
 
@@ -56,8 +57,11 @@ async function submitAnswerController(req, res) {
   const nextQuestionNumber = currentQuestionNumber + 1;
   const now = new Date();
 
-  // Check if this is the last question (question 10)
-  const isLastQuestion = currentQuestionNumber >= 10;
+  // Get total question count to dynamically determine the last question
+  const totalQuestions = await getTotalQuestionCount();
+  
+  // Check if this is the last question (dynamically based on total questions in DB)
+  const isLastQuestion = currentQuestionNumber >= totalQuestions;
   
   if (isLastQuestion) {
     // This was the final question - mark as finished
