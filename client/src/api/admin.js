@@ -10,4 +10,8 @@ export async function getLeaderboard() {
   return data;
 }
 
+export async function bulkRegisterTeams(csvContent) {
+  const { data } = await api.post('/admin/bulk-register', { csvContent });
+  return data; // { success: [], failed: [], duplicates: [] }
+}
 

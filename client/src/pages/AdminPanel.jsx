@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
-import { getCurrentQrToken } from '../api/admin';
+import { getCurrentQrToken, bulkRegisterTeams } from '../api/admin';
 import api from '../api/http';
 import QRCode from 'react-qr-code';
-import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal } from 'react-icons/fa';
+import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal, FaFileUpload, FaDownload } from 'react-icons/fa';
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -53,6 +53,16 @@ export default function AdminPanel() {
     ]
   });
   const [registerError, setRegisterError] = useState(null);
+
+  // CSV bulk upload state
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvResults, setCsvResults] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Team details modal state
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -303,6 +313,183 @@ export default function AdminPanel() {
     }
   };
 
+  // CSV bulk upload handlers
+  const handleCsvFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCsvFile(file);
+      setCsvResults(null);
+    }
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvFile) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+
+    setCsvUploading(true);
+    setCsvResults(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const csvContent = event.target.result;
+          const results = await bulkRegisterTeams(csvContent);
+          setCsvResults(results);
+          
+          if (results.success.length > 0) {
+            toast.success(`Successfully registered ${results.success.length} team(s)!`);
+            loadAdminData();
+          }
+          
+          if (results.failed.length > 0) {
+            toast.error(`Failed to register ${results.failed.length} team(s)`);
+          }
+          
+          if (results.duplicates.length > 0) {
+            toast.warning(`${results.duplicates.length} team(s) already exist`);
+          }
+        } catch (error) {
+          console.error('CSV upload error:', error);
+          toast.error(error?.response?.data?.message || 'Failed to process CSV');
+        } finally {
+          setCsvUploading(false);
+        }
+      };
+      reader.readAsText(csvFile);
+    } catch (error) {
+      console.error('File read error:', error);
+      toast.error('Failed to read CSV file');
+      setCsvUploading(false);
+    }
+  };
+
+  const downloadCsvTemplate = () => {
+    const template = 'Team Name,Member 1 Name,Member 1 Contact,Member 2 Name,Member 2 Contact,Member 3 Name,Member 3 Contact,Member 4 Name,Member 4 Contact\n' +
+                     'Team Alpha,John Doe,1234567890,Jane Smith,0987654321,Bob Johnson,1111111111,Alice Williams,2222222222\n' +
+                     'Team Beta,Mike Brown,3333333333,Sarah Davis,4444444444,,,,';
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'team_registration_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadCredentials = () => {
+    if (!csvResults || csvResults.success.length === 0) {
+      toast.error('No successful registrations to download');
+      return;
+    }
+
+    let csvContent = 'Team Name,Password,Member Count\n';
+    csvResults.success.forEach(team => {
+      csvContent += `${team.teamName},${team.password},${team.memberCount}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `team_credentials_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Credentials downloaded!');
+  };
+
+  // Team details modal handlers
+  const handleTeamClick = async (team) => {
+    try {
+      // Try to find in teams state first (has members from backend)
+      let fullTeam = teams.find(t => t.id === team.id);
+      
+      // If not found in teams or missing members data, try leaderboard data
+      if (!fullTeam || !fullTeam.members) {
+        fullTeam = team;
+      }
+      
+      // If still no members, fetch fresh data
+      if (!fullTeam.members || fullTeam.members.length === 0) {
+        const response = await api.get('/admin/teams');
+        const freshTeam = response.data.find(t => t.id === team.id);
+        if (freshTeam) {
+          fullTeam = { ...fullTeam, members: freshTeam.members || [] };
+        }
+      }
+      
+      console.log('Team details:', fullTeam);
+      setSelectedTeam(fullTeam);
+      setShowTeamModal(true);
+    } catch (error) {
+      console.error('Failed to load team details:', error);
+      toast.error('Failed to load team details');
+    }
+  };
+
+  const closeTeamModal = () => {
+    setShowTeamModal(false);
+    setSelectedTeam(null);
+  };
+
+  // Helper function to format Firestore timestamp
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '—';
+    
+    try {
+      let date;
+      
+      // Handle Firestore Timestamp object
+      if (timestamp._seconds || timestamp.seconds) {
+        const seconds = timestamp._seconds || timestamp.seconds;
+        date = new Date(seconds * 1000);
+      } 
+      // Handle nanoseconds format
+      else if (timestamp._nanoseconds || timestamp.nanoseconds) {
+        const seconds = timestamp._seconds || timestamp.seconds || 0;
+        date = new Date(seconds * 1000);
+      }
+      // Handle ISO string
+      else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      }
+      // Handle regular Date or timestamp in milliseconds
+      else if (typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      }
+      // Handle Date object
+      else if (timestamp instanceof Date) {
+        date = timestamp;
+      }
+      // Fallback
+      else {
+        date = new Date(timestamp);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error('Invalid timestamp:', timestamp);
+        return 'Invalid Date';
+      }
+      
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', timestamp, error);
+      return 'Invalid Date';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -401,6 +588,7 @@ export default function AdminPanel() {
               { id: 'questions', label: 'Questions', icon: <FaQuestionCircle /> },
               { id: 'teams', label: 'Teams', icon: <FaUsers /> },
               { id: 'register', label: 'Register Team', icon: <FaUserPlus /> },
+              { id: 'bulk-upload', label: 'Bulk Upload', icon: <FaFileUpload /> },
               { id: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy /> }
             ].map(tab => (
               <button
@@ -688,9 +876,217 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {activeTab === 'bulk-upload' && (
+          <div className="space-y-6">
+            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <FaFileUpload /> Bulk Team Registration
+              </h2>
+              
+              <div className="space-y-4">
+                {/* Instructions */}
+                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-300 mb-2">📋 Instructions:</h3>
+                  <ul className="text-sm text-slate-300 space-y-1 list-disc list-inside">
+                    <li>Download the CSV template below</li>
+                    <li>Fill in team names and member details (up to 4 members per team)</li>
+                    <li>Upload the completed CSV file</li>
+                    <li>Passwords will be automatically generated for each team</li>
+                    <li>Download the credentials file to share with teams</li>
+                  </ul>
+                </div>
+
+                {/* CSV Format Example */}
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-slate-300 mb-2">CSV Format:</h3>
+                  <pre className="text-xs text-slate-400 bg-slate-900 p-3 rounded overflow-x-auto">
+{`Team Name, Member 1 Name, Member 1 Contact, Member 2 Name, Member 2 Contact, ...
+Team Alpha, John Doe, 1234567890, Jane Smith, 0987654321, Bob Johnson, 1111111111
+Team Beta, Mike Brown, 3333333333, Sarah Davis, 4444444444`}
+                  </pre>
+                </div>
+
+                {/* Download Template Button */}
+                <button
+                  onClick={downloadCsvTemplate}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                >
+                  <FaDownload /> Download CSV Template
+                </button>
+
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvFileChange}
+                    className="hidden"
+                  />
+                  
+                  {!csvFile ? (
+                    <div>
+                      <FaFileUpload className="mx-auto text-4xl text-slate-500 mb-3" />
+                      <p className="text-slate-400 mb-3">Select a CSV file to upload</p>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors"
+                      >
+                        Choose File
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-white font-semibold mb-3">
+                        📄 {csvFile.name}
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={handleCsvUpload}
+                          disabled={csvUploading}
+                          className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          {csvUploading ? (
+                            <>
+                              <FaSpinner className="animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <FaFileUpload /> Upload & Register Teams
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCsvFile(null);
+                            setCsvResults(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Results Display */}
+                {csvResults && (
+                  <div className="space-y-4">
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-green-400 text-sm">Successful</p>
+                            <p className="text-white text-2xl font-bold">{csvResults.success.length}</p>
+                          </div>
+                          <FaCheckCircle className="text-green-400 text-3xl" />
+                        </div>
+                      </div>
+                      
+                      <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-red-400 text-sm">Failed</p>
+                            <p className="text-white text-2xl font-bold">{csvResults.failed.length}</p>
+                          </div>
+                          <FaTrash className="text-red-400 text-3xl" />
+                        </div>
+                      </div>
+                      
+                      <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-yellow-400 text-sm">Duplicates</p>
+                            <p className="text-white text-2xl font-bold">{csvResults.duplicates.length}</p>
+                          </div>
+                          <FaUsers className="text-yellow-400 text-3xl" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Download Credentials Button */}
+                    {csvResults.success.length > 0 && (
+                      <button
+                        onClick={downloadCredentials}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
+                      >
+                        <FaDownload /> Download Team Credentials
+                      </button>
+                    )}
+
+                    {/* Successful Registrations */}
+                    {csvResults.success.length > 0 && (
+                      <div className="bg-slate-700 rounded-lg p-4">
+                        <h3 className="font-semibold text-green-400 mb-3 flex items-center gap-2">
+                          <FaCheckCircle /> Successfully Registered Teams
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-slate-600">
+                                <th className="text-left py-2 px-3 text-slate-300 text-sm">Team Name</th>
+                                <th className="text-left py-2 px-3 text-slate-300 text-sm">Password</th>
+                                <th className="text-left py-2 px-3 text-slate-300 text-sm">Members</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {csvResults.success.map((team, idx) => (
+                                <tr key={idx} className="border-b border-slate-600">
+                                  <td className="py-2 px-3 text-white text-sm">{team.teamName}</td>
+                                  <td className="py-2 px-3 text-green-400 font-mono text-sm">{team.password}</td>
+                                  <td className="py-2 px-3 text-slate-300 text-sm">{team.memberCount}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Failed Registrations */}
+                    {csvResults.failed.length > 0 && (
+                      <div className="bg-slate-700 rounded-lg p-4">
+                        <h3 className="font-semibold text-red-400 mb-3">❌ Failed Registrations</h3>
+                        <ul className="space-y-2">
+                          {csvResults.failed.map((item, idx) => (
+                            <li key={idx} className="text-sm text-slate-300">
+                              <span className="font-medium">{item.teamName}</span>: {item.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Duplicate Teams */}
+                    {csvResults.duplicates.length > 0 && (
+                      <div className="bg-slate-700 rounded-lg p-4">
+                        <h3 className="font-semibold text-yellow-400 mb-3">⚠️ Duplicate Teams (Skipped)</h3>
+                        <ul className="space-y-2">
+                          {csvResults.duplicates.map((item, idx) => (
+                            <li key={idx} className="text-sm text-slate-300">
+                              <span className="font-medium">{item.teamName}</span>: {item.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'leaderboard' && (
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4">🏆 Leaderboard</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">🏆 Leaderboard</h2>
+              <p className="text-sm text-slate-400">💡 Click on a team to view details</p>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -707,7 +1103,8 @@ export default function AdminPanel() {
                   {leaderboard.map((team, idx) => (
                     <tr 
                       key={team.id} 
-                      className={`border-b border-slate-700 ${
+                      onClick={() => handleTeamClick(team)}
+                      className={`border-b border-slate-700 cursor-pointer hover:bg-slate-700/50 transition-colors ${
                         idx === 0 ? 'bg-yellow-900/20' : 
                         idx === 1 ? 'bg-slate-700/30' : 
                         idx === 2 ? 'bg-orange-900/20' : ''
@@ -730,9 +1127,7 @@ export default function AdminPanel() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-slate-300 text-sm">
-                        {team.finishTime 
-                          ? new Date(team.finishTime.seconds ? team.finishTime.seconds * 1000 : team.finishTime).toLocaleString()
-                          : '—'}
+                        {formatTimestamp(team.finishTime)}
                       </td>
                     </tr>
                   ))}
@@ -748,6 +1143,130 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Team Details Modal */}
+      {showTeamModal && selectedTeam && (
+        <div 
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={closeTeamModal}
+        >
+          <div 
+            className="bg-slate-800 rounded-lg p-6 border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  {selectedTeam.teamName}
+                </h2>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedTeam.finishTime 
+                    ? 'bg-green-900/30 text-green-400' 
+                    : 'bg-blue-900/30 text-blue-400'
+                }`}>
+                  {selectedTeam.finishTime ? '✅ Completed' : '⏳ In Progress'}
+                </span>
+              </div>
+              <button
+                onClick={closeTeamModal}
+                className="text-slate-400 hover:text-white text-2xl transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Progress Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-slate-700 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Current Progress</p>
+                <p className="text-white text-xl font-bold">
+                  Question {selectedTeam.currentQuestion || 1} / {questions.length}
+                </p>
+              </div>
+              
+              <div className="bg-slate-700 rounded-lg p-4">
+                <p className="text-slate-400 text-sm mb-1">Team ID</p>
+                <p className="text-white text-sm font-mono break-all">
+                  {selectedTeam.id}
+                </p>
+              </div>
+              
+              {selectedTeam.finishTime && (
+                <div className="bg-slate-700 rounded-lg p-4 md:col-span-2">
+                  <p className="text-slate-400 text-sm mb-1">
+                    <FaClock className="inline mr-1" /> Completion Time
+                  </p>
+                  <p className="text-white font-semibold">
+                    {formatTimestamp(selectedTeam.finishTime)}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Team Members */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <FaUsers /> Team Members
+                {selectedTeam.members && selectedTeam.members.length > 0 && (
+                  <span className="text-sm text-slate-400">({selectedTeam.members.length})</span>
+                )}
+              </h3>
+              {selectedTeam.members && selectedTeam.members.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedTeam.members.map((member, idx) => (
+                    <div 
+                      key={idx}
+                      className="bg-slate-700 rounded-lg p-4 flex items-center gap-4"
+                    >
+                      <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-semibold">{member.name || 'N/A'}</p>
+                        <p className="text-slate-400 text-sm">
+                          {member.contact ? `📞 ${member.contact}` : 'No contact provided'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-700 rounded-lg p-4 text-center">
+                  <p className="text-slate-400">No team members registered</p>
+                </div>
+              )}
+            </div>
+
+            {/* Role Info */}
+            <div className="bg-slate-700 rounded-lg p-4 mb-6">
+              <p className="text-slate-400 text-sm mb-1">Role</p>
+              <p className="text-white font-semibold capitalize">
+                {selectedTeam.role || 'participant'}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  handleResetTeam(selectedTeam.id);
+                  closeTeamModal();
+                }}
+                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+              >
+                🔄 Reset Progress
+              </button>
+              <button
+                onClick={closeTeamModal}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

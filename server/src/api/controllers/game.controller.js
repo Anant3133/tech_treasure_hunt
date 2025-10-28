@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const admin = require('firebase-admin');
 
 const {
   findTeamById,
@@ -62,7 +63,7 @@ async function submitAnswerController(req, res) {
   }
 
   const nextQuestionNumber = currentQuestionNumber + 1;
-  const now = new Date();
+  const now = admin.firestore.Timestamp.now();
 
   // Get total question count to dynamically determine the last question
   const totalQuestions = await getTotalQuestionCount();

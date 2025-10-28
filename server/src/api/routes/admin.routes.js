@@ -16,7 +16,8 @@ const {
   getCurrentQrTokenValidations,
   getQRImage,
   getQRImageValidations,
-  getQRPreview
+  getQRPreview,
+  bulkRegisterTeams
 } = require('../controllers/admin.controller');
 
 const router = Router();
@@ -33,6 +34,7 @@ router.delete('/questions/id/:questionId', removeQuestionById);
 // Teams routes
 router.get('/teams', getTeams);
 router.post('/teams/:teamId/reset', resetTeamProgressValidations, resetTeamProgress);
+router.post('/bulk-register', bulkRegisterTeams);
 
 // QR routes
 router.get('/qr/current/:questionNumber', getCurrentQrTokenValidations, getCurrentQrToken);

@@ -5,10 +5,15 @@ const {
   listQuestions,
   getAllTeamsSorted,
   updateTeamProgress,
+  findTeamByName,
+  createTeam,
 } = require('../services/firestore.service');
 const questionCache = require('../services/questionCache');
 const { generateToken, DEFAULT_TTL_SECONDS } = require('../services/qr.service');
 const QRCode = require('qrcode');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { TeamModel } = require('../models/Team.model');
 
 console.log('[Controller] admin.controller.js loaded');
 
@@ -125,7 +130,8 @@ async function getTeams(req, res) {
       teamName: t.teamName,
       role: t.role || 'participant',
       currentQuestion: t.currentQuestion || 0,
-      finishTime: t.finishTime || null
+      finishTime: t.finishTime || null,
+      members: t.members || [] // Include team members
     }));
     res.json(sanitized);
   } catch (err) {
@@ -234,6 +240,146 @@ const getQRPreview = async (req, res) => {
   }
 };
 
+// -------------------- CSV BULK UPLOAD --------------------
+/**
+ * Generate a random password
+ */
+function generatePassword(length = 8) {
+  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+}
+
+/**
+ * Parse CSV content and extract teams with members
+ * Expected CSV format:
+ * Team Name, Member 1 Name, Member 1 Contact, Member 2 Name, Member 2 Contact, ...
+ */
+function parseCSV(csvContent) {
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
+  const teams = [];
+  
+  // Skip header if present (check if first line contains "team" or "name")
+  const startIndex = lines[0].toLowerCase().includes('team') ? 1 : 0;
+  
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    // Split by comma, handling quoted fields
+    const fields = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+    const cleanFields = fields.map(f => f.replace(/^"|"$/g, '').trim());
+    
+    if (cleanFields.length === 0) continue;
+    
+    const teamName = cleanFields[0];
+    if (!teamName) continue;
+    
+    // Extract members (pairs of name, contact)
+    const members = [];
+    for (let j = 1; j < cleanFields.length && members.length < 4; j += 2) {
+      const memberName = cleanFields[j];
+      const memberContact = cleanFields[j + 1] || '';
+      if (memberName) {
+        members.push({ name: memberName, contact: memberContact });
+      }
+    }
+    
+    teams.push({ teamName, members });
+  }
+  
+  return teams;
+}
+
+/**
+ * Bulk register teams from CSV
+ * POST /admin/bulk-register
+ * Body: { csvContent: string }
+ */
+async function bulkRegisterTeams(req, res) {
+  console.log('[bulkRegisterTeams] Starting bulk registration');
+  
+  try {
+    const { csvContent } = req.body;
+    if (!csvContent || typeof csvContent !== 'string') {
+      return res.status(400).json({ message: 'CSV content is required' });
+    }
+    
+    const teamsData = parseCSV(csvContent);
+    console.log('[bulkRegisterTeams] Parsed teams:', teamsData.length);
+    
+    if (teamsData.length === 0) {
+      return res.status(400).json({ message: 'No valid teams found in CSV' });
+    }
+    
+    const results = {
+      success: [],
+      failed: [],
+      duplicates: []
+    };
+    
+    for (const teamData of teamsData) {
+      try {
+        // Check if team already exists
+        const existing = await findTeamByName(teamData.teamName);
+        if (existing) {
+          console.log('[bulkRegisterTeams] Team already exists:', teamData.teamName);
+          results.duplicates.push({
+            teamName: teamData.teamName,
+            reason: 'Team name already exists'
+          });
+          continue;
+        }
+        
+        // Generate password
+        const password = generatePassword(8);
+        const hashed = await bcrypt.hash(password, 10);
+        
+        // Create team
+        const team = new TeamModel({
+          teamName: teamData.teamName,
+          password: hashed,
+          currentQuestion: 1,
+          lastCorrectAnswerTimestamp: null,
+          finishTime: null,
+          role: 'participant',
+          members: teamData.members
+        });
+        
+        const created = await createTeam(team);
+        console.log('[bulkRegisterTeams] Team created:', created.id);
+        
+        results.success.push({
+          teamName: teamData.teamName,
+          password: password, // Plain password for admin to share
+          teamId: created.id,
+          memberCount: teamData.members.length
+        });
+      } catch (error) {
+        console.error('[bulkRegisterTeams] Failed to create team:', teamData.teamName, error);
+        results.failed.push({
+          teamName: teamData.teamName,
+          reason: error.message || 'Unknown error'
+        });
+      }
+    }
+    
+    console.log('[bulkRegisterTeams] Results:', {
+      successCount: results.success.length,
+      failedCount: results.failed.length,
+      duplicatesCount: results.duplicates.length
+    });
+    
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('[bulkRegisterTeams] Error:', error);
+    res.status(500).json({ message: 'Failed to process bulk registration' });
+  }
+}
+
 // -------------------- EXPORTS --------------------
 module.exports = {
   upsertQuestion,
@@ -250,4 +396,5 @@ module.exports = {
   getQRImage,
   getQRImageValidations,
   getQRPreview, // ✅ ensured correctly exported
+  bulkRegisterTeams,
 };
