@@ -101,7 +101,8 @@ export default function Game() {
   if (loading) {
     return (
       <NavLayout>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-black/90 via-green-900/40 to-black/90 flex items-center justify-center
+">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
             <p className="text-white text-xl">Loading your progress...</p>
@@ -115,9 +116,9 @@ export default function Game() {
     <div className="relative min-h-screen bg-black text-green-400 flex flex-col">
       <main className="flex-grow pb-24">
       <NavLayout>
-      <div className="max-w-4xl mx-auto p-2 sm:p-4 md:p-6">
-        <div className="bg-slate-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-slate-700">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+  <div className="bg-black/70 backdrop-blur-md rounded-3xl shadow-[0_0_30px_#22ff8844] border border-green-400/30 p-6 sm:p-8 mb-6">
+    <h2 className="text-3xl sm:text-4xl font-extrabold text-green-400 mb-6 text-center drop-shadow-[0_0_10px_#39ff14]">
             Question {question?.questionNumber || currentQuestion}
           </h2>
           <p className="text-base sm:text-lg text-slate-300 mb-6 sm:mb-8 text-center leading-relaxed break-words">
@@ -132,7 +133,8 @@ export default function Game() {
                 placeholder="Your answer" 
                 autoComplete="off"
               />
-              <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 rounded-xl font-semibold transition-colors shadow-lg hover:shadow-xl whitespace-nowrap">
+              <button className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-400 hover:from-green-500 hover:to-green-300 text-black px-6 sm:px-8 py-3 rounded-xl font-semibold shadow-[0_0_15px_rgba(20,255,50,0.6)] hover:shadow-[0_0_30px_rgba(15,230,50,0.9)] transition-all duration-300 whitespace-nowrap
+">
                 Submit
               </button>
             </div>

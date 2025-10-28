@@ -23,8 +23,8 @@ export default function Leaderboard() {
     <div className="relative min-h-screen bg-black text-green-400 flex flex-col">
       <main className="flex-grow pb-24">
       <NavLayout>
-      <div className="min-h-screen bg-black text-white px-3 py-4 sm:px-6 md:px-10">
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-lg p-4 sm:p-6">
+      <div className="min-h-screen bg-black text-white px-3 py-4 sm:px-6 md:px-10 mt-10">
+        <div className="relative w-[100vw] max-w-7xl mx-auto bg-gradient-to-br from-black/60 via-gray-900/40 to-black/60 border border-green-400/20 rounded-2xl shadow-[0_0_35px_rgba(34,197,94,0.25)] backdrop-blur-md transition-transform duration-300 hover:shadow-[0_0_50px_rgba(20,220,80,0.28)] animate-fadein p-4 sm:p-8 leaderboard-glow">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6">
             🏆 Leaderboard
           </h2>
@@ -77,12 +77,14 @@ export default function Leaderboard() {
               </button>
             ))}
           </div>
+          
 
           {/* Desktop layout */}
           <div className="hidden sm:block overflow-x-auto rounded-xl">
             <table className="w-full border-collapse text-sm sm:text-base">
               <thead>
-                <tr className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+              <tr className="bg-gradient-to-r from-green-600 to-green-400 text-green-50 drop-shadow-[0_0_15px_rgba(34,197,94,0.85)] font-semibold rounded-t-2xl">
+
                   <th className="p-3 sm:p-4 text-left font-semibold">Rank</th>
                   <th className="p-3 sm:p-4 text-left font-semibold">Team</th>
                   <th className="p-3 sm:p-4 text-left font-semibold">
@@ -126,8 +128,8 @@ export default function Leaderboard() {
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
                           r.finishTime
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
+                            ? 'bg-green-300 text-green-900 shadow-[0_0_12px_#39ff14aa]'
+                            : 'bg-black/60 text-green-300 border border-green-400/40 shadow-[0_0_12px_#9efcbb77]'
                         }`}
                       >
                         {r.finishTime ? 'Completed' : 'In Progress'}
@@ -144,7 +146,8 @@ export default function Leaderboard() {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
               <div className="bg-slate-800 rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-xs sm:max-w-md border border-slate-600 relative">
                 <button
-                  className="absolute top-2 right-3 text-slate-400 hover:text-white text-2xl font-bold"
+                  className="absolute top-3 right-5 text-green-300 hover:text-green-200 text-3xl font-extrabold drop-shadow-[0_0_10px_#39ff14cc] transition-all
+"
                   onClick={() => setModalTeam(null)}
                   aria-label="Close"
                 >
@@ -180,7 +183,7 @@ export default function Leaderboard() {
 
           {rows.length === 0 && !error && (
             <div className="text-center py-12">
-              <p className="text-slate-400 text-lg">
+              <p className="text-slate-400 text-lg ">
                 No teams registered yet.
               </p>
             </div>
