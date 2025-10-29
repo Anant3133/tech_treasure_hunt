@@ -7,7 +7,7 @@ import 'locomotive-scroll/dist/locomotive-scroll.css';
 import LocomotiveScroll from 'locomotive-scroll';
 import { useAuth } from '../App.jsx';
 import { decodeJWT } from '../api/utils';
-import Hyperspeed from '../Hyperspeed'; // ✅ Replace LetterGlitch with Hyperspeed
+import Iridescence from '../Iridescence'; // ✅ replaced Hyperspeed import
 import { getTeamInfo } from '../api/game';
 import { FaUsers, FaPhone, FaSignInAlt } from 'react-icons/fa';
 
@@ -16,7 +16,7 @@ export default function Home() {
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [showHyperspeed, setShowHyperspeed] = useState(false);
+  const [showIridescence, setShowIridescence] = useState(false); // ✅ renamed state
   const [fetchedTeam, setFetchedTeam] = useState(null);
   const navigate = useNavigate();
   const { login: authLogin, user, isAuthenticated } = useAuth();
@@ -27,35 +27,32 @@ export default function Home() {
       smooth: true,
       multiplier: 1.1,
     });
-    // Feature-detect WebGL before attempting Hyperspeed; some phones disable
-    // WebGL or block contexts until user interaction. We check support first
-    // and only enable the canvas mount when available.
+
     function supportsWebGL() {
       try {
         const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const gl =
+          canvas.getContext('webgl2') ||
+          canvas.getContext('webgl') ||
+          canvas.getContext('experimental-webgl');
         return !!gl;
       } catch (e) { return false; }
     }
 
-    // Delay Hyperspeed render to next tick to ensure DOM is ready
     const t = setTimeout(() => {
       if (supportsWebGL()) {
-        console.log('Home: WebGL supported — mounting Hyperspeed');
-        setShowHyperspeed(true);
+        setShowIridescence(true);
       } else {
-        console.warn('Home: WebGL not supported — using CSS fallback');
-        setShowHyperspeed(false);
+        setShowIridescence(false);
       }
     }, 0);
 
-    // Retry mounting Hyperspeed on visibilitychange, resize or touchstart (mobile browsers sometimes block initial render)
     const tryMount = () => {
-      if (!showHyperspeed) {
-        // small debounce
-        setTimeout(() => setShowHyperspeed(true), 50);
+      if (!showIridescence) {
+        setTimeout(() => setShowIridescence(true), 50);
       }
     };
+
     window.addEventListener('visibilitychange', tryMount);
     window.addEventListener('resize', tryMount);
     window.addEventListener('touchstart', tryMount, { passive: true });
@@ -70,7 +67,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // If authenticated, fetch team info and display members
     let mounted = true;
     async function loadTeam() {
       try {
@@ -79,7 +75,6 @@ export default function Home() {
           if (mounted) setFetchedTeam(data);
         }
       } catch (err) {
-        // don't crash the Home page if fetch fails
         console.warn('Failed to fetch team info', err?.response?.data || err?.message || err);
       }
     }
@@ -119,52 +114,17 @@ export default function Home() {
       data-scroll-container
       className="relative min-h-screen bg-black flex flex-col items-center justify-start overflow-x-hidden"
     >
-      {/* 🌌 Hyperspeed Background (replaces LetterGlitch) */}
+      {/* 🌌 Iridescence Background */}
       <div className="absolute inset-0 -z-10">
-        {showHyperspeed ? (
-          <Hyperspeed
-            effectOptions={{
-              onSpeedUp: () => {},
-              onSlowDown: () => {},
-              distortion: 'turbulentDistortion',
-              length: 400,
-              roadWidth: 10,
-              islandWidth: 2,
-              lanesPerRoad: 4,
-              fov: 90,
-              fovSpeedUp: 150,
-              speedUp: 2,
-              carLightsFade: 0.4,
-              totalSideLightSticks: 20,
-              lightPairsPerRoadWay: 40,
-              shoulderLinesWidthPercentage: 0.05,
-              brokenLinesWidthPercentage: 0.1,
-              brokenLinesLengthPercentage: 0.5,
-              lightStickWidth: [0.12, 0.5],
-              lightStickHeight: [1.3, 1.7],
-              movingAwaySpeed: [60, 80],
-              movingCloserSpeed: [-120, -160],
-              carLightsLength: [400 * 0.03, 400 * 0.2],
-              carLightsRadius: [0.05, 0.14],
-              carWidthPercentage: [0.3, 0.5],
-              carShiftX: [-0.8, 0.8],
-              carFloorSeparation: [0, 5],
-              colors: {
-                roadColor: 0x080808,
-                islandColor: 0x0a0a0a,
-                background: 0x000000,
-                shoulderLines: 0xFFFFFF,
-                brokenLines: 0xFFFFFF,
-                leftCars: [0xD856BF, 0x6750A2, 0xC247AC],
-                rightCars: [0x03B3C3, 0x0E5EA5, 0x324555],
-                sticks: 0x03B3C3,
-              }
-            }}
+        {showIridescence ? (
+          <Iridescence
+            color={[0.05, 0.5, 0.05]}
+            mouseReact={false}
+            amplitude={0.1}
+            speed={1.0}
           />
         ) : (
-          // CSS fallback for devices without WebGL or when Hyperspeed disabled
           <div className="w-full h-full bg-gradient-to-b from-black via-slate-900 to-black" aria-hidden>
-            {/* subtle animated gradient */}
             <div className="absolute inset-0 opacity-40 animate-pulse bg-gradient-to-r from-indigo-900 via-black to-slate-900" />
           </div>
         )}
@@ -194,7 +154,6 @@ export default function Home() {
             </span>
           </motion.h1>
 
-          {/* Show current logged-in team info (if available) */}
           {fetchedTeam && (
             <div className="mt-2 mb-4 text-left text-sm text-white/90 bg-white/5 border border-white/10 p-3 rounded-lg">
               <div className="font-semibold flex items-center gap-2">
@@ -229,7 +188,6 @@ export default function Home() {
             Solve. Race. Conquer.
           </motion.p>
 
-          {/* --- Form --- */}
           <motion.form
             onSubmit={onSubmit}
             initial={{ opacity: 0, y: 10 }}
@@ -265,17 +223,6 @@ export default function Home() {
             </motion.button>
           </motion.form>
 
-          <motion.div
-            className="mt-4 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <p className="text-white/70 text-xs">
-              Don't have an account? Contact admin to register your team.
-            </p>
-          </motion.div>
-
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -289,7 +236,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* --- Game Rules Section --- */}
       <section
         data-scroll
         data-scroll-speed="0.5"
