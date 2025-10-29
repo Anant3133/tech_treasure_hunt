@@ -124,8 +124,8 @@ export default function Home() {
             speed={1.0}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-b from-black via-slate-900 to-black" aria-hidden>
-            <div className="absolute inset-0 opacity-40 animate-pulse bg-gradient-to-r from-indigo-900 via-black to-slate-900" />
+          <div className="w-full h-full bg-gradient-to-b from-black via-green-950 to-black" aria-hidden>
+            <div className="absolute inset-0 opacity-40 animate-pulse bg-gradient-to-r from-green-900 via-black to-green-950" />
           </div>
         )}
       </div>
