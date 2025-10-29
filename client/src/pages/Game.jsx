@@ -91,6 +91,7 @@ export default function Game() {
         setStatus(null); // Clear any previous status message
         setShowScanner(false);
         setHint(null);
+        setCanScan(false)
       }
     } catch (e) {
       setStatus(e?.response?.data?.message || 'QR resolve failed');
