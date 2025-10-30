@@ -73,7 +73,26 @@ function AuthProvider({ children }) {
     logout(); // Call the existing logout function
   };
 
+  // Wake up backend on app mount (prevent Render cold starts)
+  const wakeUpBackend = async () => {
+    try {
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      // Don't use /api prefix for health endpoint
+      await fetch(`${baseURL}/health`, { 
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      console.log('[Backend] Wake-up ping successful');
+    } catch (error) {
+      // Silent fail - don't block app if backend is slow/down
+      console.log('[Backend] Wake-up ping failed (this is okay):', error.message);
+    }
+  };
+
   useEffect(() => {
+    // Ping backend first to wake it up
+    wakeUpBackend();
+    // Then check auth
     checkAuth();
   }, []);
 

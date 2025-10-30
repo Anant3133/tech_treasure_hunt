@@ -9,7 +9,12 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  console.log('[Health] Backend ping received - server is awake');
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    message: 'Backend is running'
+  });
 });
 
 app.use('/api', routes);
