@@ -6,8 +6,15 @@ import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
 import { useAuth } from '../App.jsx';
 import { getTeamInfo } from '../api/game';
-import { FaUsers, FaPhone, FaPlay, FaCheckCircle, FaTrophy } from 'react-icons/fa';
-
+import { FaUsers, FaPhone, FaPlay, FaCheckCircle, FaTrophy, FaClock, FaRunning } from 'react-icons/fa';
+import { GiBrain } from "react-icons/gi";
+import { IoExtensionPuzzleSharp } from "react-icons/io5";
+import { CiMobile1 } from "react-icons/ci";
+import { BsTrophyFill } from "react-icons/bs";
+import { PiLightbulbFilamentFill } from "react-icons/pi";
+import { AiTwotoneThunderbolt } from "react-icons/ai";
+import { FaMagnifyingGlass } from "react-icons/fa6";
+import { GiBullseye } from "react-icons/gi";
 export default function StartGame() {
   const navigate = useNavigate();
   const [teamProgress, setTeamProgress] = useState(null);
@@ -189,54 +196,58 @@ export default function StartGame() {
 
       {/* Game Info Cards */}
       <div className="bg-black py-16 px-6 text-green-300">
-        <h2 className="text-3xl font-bold text-center mb-12 tracking-wider text-green-400 drop-shadow-[0_0_10px_#00ff99]">
-          How It Works 🧠
+        <h2 className="text-3xl font-bold text-center mb-12 tracking-wider text-green-400 drop-shadow-[0_0_10px_#00ff99] flex items-center justify-center gap-3">
+        <GiBrain className="text-4xl text-green-400 drop-shadow-[0_0_50px_#ff4fd8] relative -top-1" />
+        How It Works 
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {[
-            {
-              icon: '🧩',
-              title: 'Solve Puzzles',
-              desc: 'Crack riddles and decrypt clues. Each mission brings you closer to victory!',
-            },
-            {
-              icon: '📱',
-              title: 'Scan QR Codes',
-              desc: 'Authenticate progress with QR checkpoints. Unlock secret hints as you go.',
-            },
-            {
-              icon: '🏆',
-              title: 'Race to Victory',
-              desc: 'Compete with rival teams. The fastest hacker to complete all missions wins!',
-            },
-          ].map((card, i) => (
-            <div
-              key={i}
-              className="bg-black/60 border border-green-500/40 rounded-2xl p-8 text-center shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_30px_#00ff99] hover:-translate-y-1 transition-all duration-300"
-            >
-              <div className="text-4xl mb-4 animate-bounce">{card.icon}</div>
-              <h3 className="text-xl font-bold mb-2 text-green-400">{card.title}</h3>
-              <p className="text-green-300 text-sm leading-relaxed">{card.desc}</p>
-            </div>
-          ))}
-        </div>
+    {[
+      {
+        icon: (
+          <IoExtensionPuzzleSharp className="text-5xl text-pink-400 drop-shadow-[0_0_25px_#ff4fd8] animate-bounce" />
+        ),
+        title: "Solve Puzzles",
+        desc: "Crack riddles and decrypt clues. Each mission brings you closer to victory!",
+      },
+      {
+        icon: <CiMobile1  className="text-5xl text-green-400 drop-shadow-[0_0_25px_#ff4fd8] animate-bounce"/>,
+        title: "Scan QR Codes",
+        desc: "Authenticate progress with QR checkpoints. Unlock secret hints as you go.",
+      },
+      {
+        icon: <BsTrophyFill className="text-5xl text-yellow-400 drop-shadow-[0_0_25px_#ff4fd8] animate-bounce" />,
+        title: "Race to Victory",
+        desc: "Compete with rival teams. The fastest hacker to complete all missions wins!",
+      },
+    ].map((card, i) => (
+      <div
+        key={i}
+        className="bg-black/60 border border-green-500/40 rounded-2xl p-8 text-center shadow-[0_0_15px_#00ff99] hover:shadow-[0_0_30px_#00ff99] hover:-translate-y-1 transition-all duration-300"
+      >
+        <div className="flex justify-center mb-4">{card.icon}</div>
+        <h3 className="text-xl font-bold mb-2 text-green-400">{card.title}</h3>
+        <p className="text-green-300 text-sm leading-relaxed">{card.desc}</p>
       </div>
+    ))}
+  </div>
+</div>
+
 
       {/* Tips Section */}
-      <div className="bg-gradient-to-b from-black via-gray-900 to-black text-green-300 border-t border-green-500/20 py-16">
-        <h2 className="text-3xl font-bold text-center mb-10 tracking-wider text-green-400 drop-shadow-[0_0_10px_#00ff99]">
-          Pro Tips 💡
+      <div className="bg-black py-16 px-6 text-green-300">
+        <h2 className="text-3xl font-bold text-center mb-12 tracking-wider text-green-400 drop-shadow-[0_0_50px_#00ff99] flex items-center justify-center gap-3">
+          Pro Tips <PiLightbulbFilamentFill className='text-4xl text-yellow-400 drop-shadow-[0_0_20px_#00ff99] relative -top-1 '/>
         </h2>
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 px-6">
           {[
-            ['⚡', 'Collaborate efficiently — your team is your biggest weapon.'],
-            ['🔍', 'Read every clue carefully. Think beyond the obvious.'],
-            ['📱', 'Keep your phone charged. Dead battery = Game Over.'],
-            ['⏰', 'Time is critical — don’t waste a second.'],
-            ['🎯', 'Use hints wisely — they might be your lifeline.'],
-            ['🏃', 'Stay sharp, stay fast. Every second counts.'],
+            [<AiTwotoneThunderbolt />, 'Collaborate efficiently — your team is your biggest weapon.'],
+            [<FaMagnifyingGlass />, 'Read every clue carefully. Think beyond the obvious.'],
+            [ <CiMobile1 />, 'Keep your phone charged. Dead battery = Game Over.'],
+            [<FaClock />, 'Time is critical — don’t waste a second.'],
+            [<GiBullseye /> ,'Use hints wisely — they might be your lifeline.'],
+            [<FaRunning />, 'Stay sharp, stay fast. Every second counts.'],
           ].map(([icon, text], i) => (
             <div
               key={i}
@@ -250,9 +261,9 @@ export default function StartGame() {
       </div>
 
       {/* Footer */}
-      <div className="bg-black text-center py-6 ">
-        <p className="text-green-500 text-sm tracking-widest uppercase animate-pulse">
-          Good luck, Agent. May your code be flawless. 🧠
+      <div className="bg-black text-center py-6 flex justify-center mb-3 ">
+        <p className="flex items-center gap-2 text-green-500 text-sm tracking-widest uppercase animate-pulse">
+          Good luck, Agent. May your code be flawless. <GiBrain className='text-2xl text-green-400 drop-shadow-[0_0_50px_#00ff99] relative -top-1'/>
         </p>
         
       </div>
