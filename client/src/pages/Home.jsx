@@ -7,16 +7,16 @@ import 'locomotive-scroll/dist/locomotive-scroll.css';
 import LocomotiveScroll from 'locomotive-scroll';
 import { useAuth } from '../App.jsx';
 import { decodeJWT } from '../api/utils';
-import Iridescence from '../Iridescence'; // ✅ replaced Hyperspeed import
+import Iridescence from '../Iridescence'; // ✅ keep this import unchanged
 import { getTeamInfo } from '../api/game';
 import { FaUsers, FaPhone, FaSignInAlt } from 'react-icons/fa';
+import { Vortex } from '../components/ui/vortex'; // ✅ added import for VortexDemo
 
 export default function Home() {
-
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [showIridescence, setShowIridescence] = useState(false); // ✅ renamed state
+  const [showIridescence, setShowIridescence] = useState(false); // ✅ unchanged keyword
   const [fetchedTeam, setFetchedTeam] = useState(null);
   const navigate = useNavigate();
   const { login: authLogin, user, isAuthenticated } = useAuth();
@@ -114,15 +114,20 @@ export default function Home() {
       data-scroll-container
       className="relative min-h-screen bg-black flex flex-col items-center justify-start overflow-x-hidden"
     >
-      {/* 🌌 Iridescence Background */}
+      {/* 🌌 Vortex Background instead of Iridescence */}
       <div className="absolute inset-0 -z-10">
         {showIridescence ? (
-          <Iridescence
-            color={[0.05, 0.5, 0.05]}
-            mouseReact={false}
-            amplitude={0.1}
-            speed={1.0}
-          />
+          <div className="w-full h-full">
+            <Vortex
+              backgroundColor="black"
+              rangeY={800}
+              particleCount={500}
+              baseHue={120}
+              className="flex items-center flex-col justify-center px-2 md:px-10 py-4 w-full h-full"
+            >
+              {/* Vortex content can be empty or you can add children here */}
+            </Vortex>
+          </div>
         ) : (
           <div className="w-full h-full bg-gradient-to-b from-black via-green-950 to-black" aria-hidden>
             <div className="absolute inset-0 opacity-40 animate-pulse bg-gradient-to-r from-green-900 via-black to-green-950" />
