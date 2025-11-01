@@ -9,6 +9,7 @@ import Game from './pages/Game.jsx'
 import Login from './pages/Login.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
+import Maps from './pages/Maps.jsx'
 import { logout } from './api/auth'
 import api from './api/http'
 import { decodeJWT } from './api/utils'
@@ -182,6 +183,7 @@ export default function App() {
             <Route path="/start-game" element={<RequireAuth><StartGame /></RequireAuth>} />
             <Route path="/login" element={<RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated>} />
             <Route path="/game" element={<RequireAuth><Game /></RequireAuth>} />
+            <Route path="/maps" element={<RequireAuth><Maps /></RequireAuth>} />
             <Route path="/completion" element={<RequireAuth><Completion /></RequireAuth>} />
             <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
             <Route path="/admin-panel" element={<AdminPanel />} />

@@ -10,6 +10,7 @@ export default function NavLayout({ children }) {
   const navLinks = [
     { name: 'Home', path: '/start-game' },
     { name: 'Game', path: '/game' },
+    { name: 'Maps', path: '/maps' },
   ];
 
   return (
