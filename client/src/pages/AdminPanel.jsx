@@ -39,8 +39,13 @@ export default function AdminPanel() {
     questionNumber: '',
     text: '',
     answer: '',
-    hint: ''
+    hint: '',
+    imageUrl: '',
+    links: [] // Array of {text, url}
   });
+  
+  // Raw text for links textarea (for controlled input)
+  const [linksRawText, setLinksRawText] = useState('');
 
   // Register team form state
   const [registerForm, setRegisterForm] = useState({
@@ -202,7 +207,8 @@ export default function AdminPanel() {
     setQuestionError(null);
     try {
       await api.post('/admin/questions', questionForm);
-      setQuestionForm({ questionNumber: '', text: '', answer: '', hint: '' });
+      setQuestionForm({ questionNumber: '', text: '', answer: '', hint: '', imageUrl: '', links: [] });
+      setLinksRawText(''); // Clear the raw text field
       loadAdminData();
     } catch (error) {
       setQuestionError(error?.response?.data?.message || 'Failed to create/update question');
@@ -238,28 +244,57 @@ export default function AdminPanel() {
 
   // Drag and drop for rearranging questions
   const [dragIndex, setDragIndex] = useState(null);
-  const handleDragStart = (idx) => setDragIndex(idx);
-  const handleDragEnter = (idx) => {
-    if (dragIndex === null || dragIndex === idx) return;
-    setQuestionError(null);
-    setQuestions(qs => {
-      const arr = [...qs];
-      const [removed] = arr.splice(dragIndex, 1);
-      arr.splice(idx, 0, removed);
-      // Renumber all questions in new order
-      arr.forEach((q, i) => {
-        if (Number(q.questionNumber) !== i + 1) {
-          const newQ = { ...q, questionNumber: i + 1 };
-          arr[i] = newQ;
-          // Update backend for each affected question
-          api.post('/admin/questions', newQ).catch(err => setQuestionError(err?.response?.data?.message || 'Failed to update question numbers'));
-        }
-      });
-      return arr;
-    });
+  const [draggedOverIndex, setDraggedOverIndex] = useState(null);
+  
+  const handleDragStart = (idx) => {
     setDragIndex(idx);
   };
-  const handleDragEnd = () => setDragIndex(null);
+  
+  const handleDragEnter = (idx) => {
+    if (dragIndex === null || dragIndex === idx) return;
+    setDraggedOverIndex(idx);
+  };
+  
+  const handleDragEnd = async () => {
+    if (dragIndex === null || draggedOverIndex === null || dragIndex === draggedOverIndex) {
+      setDragIndex(null);
+      setDraggedOverIndex(null);
+      return;
+    }
+
+    setQuestionError(null);
+    
+    // Reorder questions in state
+    const arr = [...questions];
+    const [removed] = arr.splice(dragIndex, 1);
+    arr.splice(draggedOverIndex, 0, removed);
+    
+    // Renumber all questions in new order
+    const updatedQuestions = arr.map((q, i) => ({
+      ...q,
+      questionNumber: i + 1
+    }));
+    
+    // Update state immediately for UI feedback
+    setQuestions(updatedQuestions);
+    
+    // Update database for all affected questions
+    try {
+      const updatePromises = updatedQuestions.map(q => 
+        api.post('/admin/questions', q)
+      );
+      await Promise.all(updatePromises);
+      toast.success('Questions reordered successfully');
+    } catch (err) {
+      setQuestionError(err?.response?.data?.message || 'Failed to update question order');
+      toast.error('Failed to reorder questions');
+      // Reload questions on error to restore correct order
+      fetchQuestions();
+    }
+    
+    setDragIndex(null);
+    setDraggedOverIndex(null);
+  };
 
   const handleResetTeam = async (teamId) => {
     if (!confirm('Reset this team\'s progress?')) return;
@@ -765,6 +800,54 @@ export default function AdminPanel() {
                   className="w-full bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 
+                <input
+                  type="text"
+                  value={questionForm.imageUrl}
+                  onChange={(e) => setQuestionForm({...questionForm, imageUrl: e.target.value})}
+                  placeholder="Image URL (optional) - e.g., https://example.com/image.jpg"
+                  className="w-full bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                
+                {/* Links Section */}
+                <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
+                  <h3 className="text-white font-semibold mb-3">Hyperlinks (optional)</h3>
+                  <p className="text-slate-400 text-sm mb-3">Add clickable links for reference. Format: text|url (one per line)</p>
+                  <textarea
+                    value={linksRawText}
+                    onChange={(e) => {
+                      const textValue = e.target.value;
+                      setLinksRawText(textValue);
+                      
+                      // Parse links only from complete lines
+                      const lines = textValue.split('\n');
+                      const links = lines
+                        .map(line => {
+                          const trimmedLine = line.trim();
+                          if (!trimmedLine || !trimmedLine.includes('|')) return null;
+                          const pipeIndex = trimmedLine.indexOf('|');
+                          const text = trimmedLine.substring(0, pipeIndex).trim();
+                          const url = trimmedLine.substring(pipeIndex + 1).trim();
+                          return text && url ? { text, url } : null;
+                        })
+                        .filter(Boolean);
+                      setQuestionForm({...questionForm, links});
+                    }}
+                    placeholder="Example:&#10;Wikipedia Article|https://en.wikipedia.org/wiki/Python&#10;Documentation|https://docs.python.org"
+                    rows={3}
+                    className="w-full bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  />
+                  {questionForm.links && questionForm.links.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-slate-400 text-xs">Preview:</p>
+                      {questionForm.links.map((link, idx) => (
+                        <div key={idx} className="text-sm text-blue-400 flex items-center gap-2">
+                          🔗 {link.text} → {link.url}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <button
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
@@ -786,7 +869,13 @@ export default function AdminPanel() {
                 {questions.map((q, idx) => (
                   <div
                     key={q.id}
-                    className={`bg-slate-700 rounded-lg p-4 border border-slate-600 ${dragIndex === idx ? 'ring-2 ring-blue-400' : ''}`}
+                    className={`bg-slate-700 rounded-lg p-4 border border-slate-600 transition-all ${
+                      dragIndex === idx 
+                        ? 'ring-2 ring-blue-400 opacity-50' 
+                        : draggedOverIndex === idx 
+                        ? 'ring-2 ring-green-400' 
+                        : ''
+                    }`}
                     draggable
                     onDragStart={() => handleDragStart(idx)}
                     onDragEnter={() => handleDragEnter(idx)}
@@ -800,8 +889,39 @@ export default function AdminPanel() {
                           Question {q.questionNumber}
                         </h3>
                         <p className="text-slate-300 mb-2">{q.text}</p>
+                        
+                        {/* Display Image if exists */}
+                        {q.imageUrl && (
+                          <div className="my-3">
+                            <img 
+                              src={q.imageUrl} 
+                              alt="Question" 
+                              className="max-w-xs max-h-32 rounded border border-slate-500"
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                          </div>
+                        )}
+                        
                         <p className="text-green-400">Answer: {q.answer}</p>
                         {q.hint && <p className="text-yellow-400">Hint: {q.hint}</p>}
+                        
+                        {/* Display Links if exist */}
+                        {q.links && q.links.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-blue-400 text-sm font-semibold">Links:</p>
+                            {q.links.map((link, linkIdx) => (
+                              <a
+                                key={linkIdx}
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block text-blue-300 hover:text-blue-200 text-sm underline"
+                              >
+                                🔗 {link.text}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col gap-2 items-end">
                         <button

@@ -164,9 +164,48 @@ export default function Game() {
     <h2 className="text-3xl sm:text-4xl font-extrabold text-green-400 mb-6 text-center drop-shadow-[0_0_10px_#39ff14]">
             Question {question?.questionNumber || currentQuestion}
           </h2>
+          
           <p className="text-base sm:text-lg text-slate-300 mb-6 sm:mb-8 text-center leading-relaxed break-words">
             {question?.text}
           </p>
+
+          {/* Question Image */}
+          {question?.imageUrl && (
+            <div className="mb-6 flex justify-center">
+              <img 
+                src={question.imageUrl} 
+                alt="Question visual" 
+                className="max-w-full max-h-96 rounded-xl border-2 border-green-400/30 shadow-lg"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  console.error('Failed to load image:', question.imageUrl);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Question Links */}
+          {question?.links && question.links.length > 0 && (
+            <div className="mb-6 bg-slate-800/50 border border-green-400/30 rounded-xl p-4">
+              <h3 className="text-green-400 font-semibold mb-3 flex items-center gap-2">
+                🔗 Reference Links:
+              </h3>
+              <div className="space-y-2">
+                {question.links.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-blue-400 hover:text-blue-300 underline transition-colors text-sm sm:text-base"
+                  >
+                    → {link.text}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
               <input 
