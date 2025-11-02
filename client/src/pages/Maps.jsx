@@ -108,7 +108,7 @@ export default function Maps() {
         <div className="bg-slate-900 rounded-lg border-2 border-green-500/30 overflow-auto max-h-[calc(100vh-200px)] md:max-h-[calc(100vh-220px)]">
           <div className="flex justify-center items-center p-2 md:p-4 min-h-[400px]">
             <motion.img
-              src="/nsutmap.jpg"
+              src="/nsutmap25.jpg"
               alt="NSUT Campus Map"
               style={{
                 transform: `scale(${scale})`,

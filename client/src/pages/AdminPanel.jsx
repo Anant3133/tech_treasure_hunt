@@ -3,9 +3,10 @@ import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
 import { getCurrentQrToken, bulkRegisterTeams } from '../api/admin';
+import { pauseTeam, unpauseTeam } from '../api/checkpoint';
 import api from '../api/http';
 import QRCode from 'react-qr-code';
-import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal, FaFileUpload, FaDownload } from 'react-icons/fa';
+import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal, FaFileUpload, FaDownload, FaPause, FaPlay } from 'react-icons/fa';
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -435,6 +436,43 @@ export default function AdminPanel() {
     setSelectedTeam(null);
   };
 
+  // Pause/Unpause handlers
+  const handlePauseTeam = async (teamId) => {
+    try {
+      await pauseTeam(teamId);
+      toast.success('Team paused successfully');
+      fetchTeams(); // Refresh team data
+      // Update selected team if modal is open
+      if (selectedTeam && selectedTeam.id === teamId) {
+        const updated = teams.find(t => t.id === teamId);
+        if (updated) {
+          setSelectedTeam({ ...updated, isPaused: true });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to pause team:', error);
+      toast.error('Failed to pause team');
+    }
+  };
+
+  const handleUnpauseTeam = async (teamId) => {
+    try {
+      await unpauseTeam(teamId);
+      toast.success('Team unpaused successfully');
+      fetchTeams(); // Refresh team data
+      // Update selected team if modal is open
+      if (selectedTeam && selectedTeam.id === teamId) {
+        const updated = teams.find(t => t.id === teamId);
+        if (updated) {
+          setSelectedTeam({ ...updated, isPaused: false });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to unpause team:', error);
+      toast.error('Failed to unpause team');
+    }
+  };
+
   // Helper function to format Firestore timestamp
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '—';
@@ -650,6 +688,35 @@ export default function AdminPanel() {
                   {" "}
                   <span className="text-slate-400 text-xs">(auto-refreshes every {qrTtl} seconds)</span>
                 </p>
+              </div>
+            </div>
+
+            {/* Checkpoint QR Codes */}
+            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <FaCheckCircle className="text-green-400" />
+                Checkpoint QR Codes
+              </h2>
+              <p className="text-slate-400 text-sm mb-6">
+                Static QR codes for checkpoints. Teams scan these at the starting point after Q4, Q8, and Q12.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map((checkpointNum) => (
+                  <div key={checkpointNum} className="bg-slate-700 rounded-lg p-6 text-center">
+                    <h3 className="text-lg font-bold text-white mb-4">
+                      Checkpoint {checkpointNum}
+                    </h3>
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-white p-4 rounded-lg">
+                        <QRCode value={`checkpoint-${checkpointNum}`} size={180} />
+                      </div>
+                    </div>
+                    <p className="text-slate-300 text-sm">
+                      After Q{checkpointNum === 1 ? 4 : checkpointNum === 2 ? 8 : 12}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1246,14 +1313,76 @@ Team Beta, Mike Brown, 3333333333, Sarah Davis, 4444444444`}
               </p>
             </div>
 
+            {/* Checkpoint Information */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <FaCheckCircle /> Checkpoint Progress
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <p className="text-slate-400 text-sm mb-1">Checkpoint 1</p>
+                  <p className="text-white font-semibold text-sm">
+                    {selectedTeam.checkpoint1Time ? formatTimestamp(selectedTeam.checkpoint1Time) : '—'}
+                  </p>
+                </div>
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <p className="text-slate-400 text-sm mb-1">Checkpoint 2</p>
+                  <p className="text-white font-semibold text-sm">
+                    {selectedTeam.checkpoint2Time ? formatTimestamp(selectedTeam.checkpoint2Time) : '—'}
+                  </p>
+                </div>
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <p className="text-slate-400 text-sm mb-1">Checkpoint 3</p>
+                  <p className="text-white font-semibold text-sm">
+                    {selectedTeam.checkpoint3Time ? formatTimestamp(selectedTeam.checkpoint3Time) : '—'}
+                  </p>
+                </div>
+              </div>
+              {selectedTeam.awaitingCheckpoint && (
+                <div className="mt-3 bg-yellow-900/30 border border-yellow-600 rounded-lg p-3">
+                  <p className="text-yellow-400 text-sm font-semibold">
+                    ⏳ Awaiting Checkpoint {selectedTeam.awaitingCheckpoint} scan
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pause Status */}
+            {selectedTeam.isPaused && (
+              <div className="mb-6 bg-yellow-900/30 border border-yellow-600 rounded-lg p-4">
+                <p className="text-yellow-400 font-semibold flex items-center gap-2">
+                  <FaPause /> Game is Currently Paused
+                </p>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {selectedTeam.role !== 'admin' && (
+                <>
+                  {selectedTeam.isPaused ? (
+                    <button
+                      onClick={() => handleUnpauseTeam(selectedTeam.id)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FaPlay /> Unpause Game
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handlePauseTeam(selectedTeam.id)}
+                      className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FaPause /> Pause Game
+                    </button>
+                  )}
+                </>
+              )}
               <button
                 onClick={() => {
                   handleResetTeam(selectedTeam.id);
                   closeTeamModal();
                 }}
-                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
               >
                 🔄 Reset Progress
               </button>

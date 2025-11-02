@@ -4,7 +4,8 @@ import { getQuestion, submitAnswer, resolveQrToken, getTeamProgress } from '../a
 import QRScanner from '../components/QRScanner.jsx';
 import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
-import { FaLightbulb, FaPaperPlane, FaQrcode, FaTimes, FaSpinner } from 'react-icons/fa';
+import Checkpoint from './Checkpoint.jsx';
+import { FaLightbulb, FaPaperPlane, FaQrcode, FaTimes, FaSpinner, FaPause } from 'react-icons/fa';
 
 
 export default function Game() {
@@ -19,6 +20,8 @@ export default function Game() {
   const [loading, setLoading] = useState(true);
   const [questionLoading, setQuestionLoading] = useState(false);
   const [canScan, setCanScan] = useState(false); // Only allow scanning after correct answer
+  const [isPaused, setIsPaused] = useState(false);
+  const [awaitingCheckpoint, setAwaitingCheckpoint] = useState(null);
 
   // Load team progress on mount
   useEffect(() => {
@@ -30,6 +33,8 @@ export default function Game() {
           return;
         }
         setCurrentQuestion(progress.currentQuestion || 1);
+        setIsPaused(progress.isPaused || false);
+        setAwaitingCheckpoint(progress.awaitingCheckpoint || null);
       } catch (e) {
         setStatus('Failed to load team progress');
         setCurrentQuestion(1); // fallback
@@ -65,6 +70,10 @@ export default function Game() {
       const res = await submitAnswer(answer);
       if (res.finished) {
         navigate('/completion');
+        return;
+      } else if (res.requiresCheckpoint) {
+        // Redirect to checkpoint page
+        setAwaitingCheckpoint(res.checkpointNumber);
         return;
       } else if (res.requiresQrScan) {
         setStatus('Answer correct. Please scan the on-site QR to proceed.');
@@ -103,11 +112,43 @@ export default function Game() {
   if (loading) {
     return (
       <NavLayout>
-        <div className="min-h-screen bg-gradient-to-br from-black/90 via-green-900/40 to-black/90 flex items-center justify-center
-">
+        <div className="min-h-screen bg-gradient-to-br from-black/90 via-green-900/40 to-black/90 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
             <p className="text-white text-xl">Loading your progress...</p>
+          </div>
+        </div>
+      </NavLayout>
+    );
+  }
+
+  // If awaiting checkpoint, show checkpoint page
+  if (awaitingCheckpoint) {
+    return <Checkpoint checkpointNumber={awaitingCheckpoint} />;
+  }
+
+  // If game is paused, show paused screen
+  if (isPaused) {
+    return (
+      <NavLayout>
+        <div className="min-h-screen bg-gradient-to-br from-black via-yellow-900/30 to-black text-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-gradient-to-br from-yellow-900/40 to-black/60 backdrop-blur-sm border border-yellow-500 rounded-2xl p-8 text-center shadow-2xl">
+            <FaPause className="text-6xl text-yellow-400 mx-auto mb-6 animate-pulse" />
+            <h1 className="text-3xl font-bold text-yellow-400 mb-4">Game Paused</h1>
+            <p className="text-lg text-slate-300 mb-6">
+              Your game is currently paused. Please wait for the admin to unpause it.
+            </p>
+            <div className="bg-black/40 rounded-xl p-4 border border-yellow-500/30">
+              <p className="text-sm text-slate-400">
+                You can refresh this page to check if the game has been unpaused.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-6 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold py-3 px-6 rounded-xl transition-all"
+            >
+              Refresh Status
+            </button>
           </div>
         </div>
       </NavLayout>

@@ -57,7 +57,11 @@ async function submitAnswerController(req, res) {
   const question = await getQuestion(currentQuestionNumber);
   if (!question) return res.status(404).json({ message: 'Question not found' });
 
-  const isCorrect = String(submittedAnswer).trim().toLowerCase() === String(question.answer).trim().toLowerCase();
+  // Support multiple answers separated by | (e.g., "threading|multi threading|multithreading")
+  const acceptedAnswers = String(question.answer).split('|').map(ans => ans.trim().toLowerCase());
+  const submittedAnswerNormalized = String(submittedAnswer).trim().toLowerCase();
+  const isCorrect = acceptedAnswers.includes(submittedAnswerNormalized);
+  
   if (!isCorrect) {
     return res.status(400).json({ message: 'Incorrect answer' });
   }
@@ -83,6 +87,28 @@ async function submitAnswerController(req, res) {
       finished: true,
       nextHint: null,
       currentQuestion: updatedTeam.currentQuestion,
+    });
+  }
+
+  // Check if this question triggers a checkpoint (Q4, Q8, Q12)
+  const checkpointQuestions = [4, 8, 12];
+  const checkpointIndex = checkpointQuestions.indexOf(currentQuestionNumber);
+  const isCheckpointQuestion = checkpointIndex !== -1;
+
+  if (isCheckpointQuestion) {
+    // After Q4/Q8/Q12, team must go to start and scan checkpoint QR
+    const checkpointNumber = checkpointIndex + 1; // 1, 2, or 3
+    await updateTeamProgress(teamId, {
+      lastCorrectAnswerTimestamp: now,
+      awaitingCheckpoint: checkpointNumber,
+    });
+
+    return res.json({
+      correct: true,
+      finished: false,
+      requiresCheckpoint: true,
+      checkpointNumber: checkpointNumber,
+      currentQuestion: currentQuestionNumber,
     });
   }
 
@@ -114,7 +140,9 @@ async function getTeamProgressController(req, res) {
   return res.json({
     currentQuestion: team.currentQuestion || 1,
     finishTime: team.finishTime || null,
-    hasStarted: (team.currentQuestion || 1) > 1 || team.lastCorrectAnswerTimestamp !== null
+    hasStarted: (team.currentQuestion || 1) > 1 || team.lastCorrectAnswerTimestamp !== null,
+    isPaused: team.isPaused || false,
+    awaitingCheckpoint: team.awaitingCheckpoint || null,
   });
 }
 

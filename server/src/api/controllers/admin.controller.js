@@ -131,7 +131,12 @@ async function getTeams(req, res) {
       role: t.role || 'participant',
       currentQuestion: t.currentQuestion || 0,
       finishTime: t.finishTime || null,
-      members: t.members || [] // Include team members
+      members: t.members || [], // Include team members
+      isPaused: t.isPaused || false,
+      awaitingCheckpoint: t.awaitingCheckpoint || null,
+      checkpoint1Time: t.checkpoint1Time || null,
+      checkpoint2Time: t.checkpoint2Time || null,
+      checkpoint3Time: t.checkpoint3Time || null,
     }));
     res.json(sanitized);
   } catch (err) {
