@@ -1,8 +1,8 @@
 import api from './http';
 
 export async function getQuestion(questionNumber) {
-  const { data } = await api.post(`/game/question/${questionNumber}`);
-  return data; // { questionNumber, text }
+  const { data } = await api.get(`/game/question/${questionNumber}`);
+  return data; // { questionNumber, text, links, imageUrl }
 }
 
 export async function submitAnswer(submittedAnswer) {

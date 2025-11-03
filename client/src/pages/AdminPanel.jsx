@@ -818,16 +818,27 @@ export default function AdminPanel() {
                       const textValue = e.target.value;
                       setLinksRawText(textValue);
                       
-                      // Parse links only from complete lines
+                      // Parse links from complete lines
                       const lines = textValue.split('\n');
                       const links = lines
                         .map(line => {
                           const trimmedLine = line.trim();
-                          if (!trimmedLine || !trimmedLine.includes('|')) return null;
-                          const pipeIndex = trimmedLine.indexOf('|');
-                          const text = trimmedLine.substring(0, pipeIndex).trim();
-                          const url = trimmedLine.substring(pipeIndex + 1).trim();
-                          return text && url ? { text, url } : null;
+                          if (!trimmedLine) return null;
+                          
+                          // If line contains a pipe, use text|url format
+                          if (trimmedLine.includes('|')) {
+                            const [text, url] = trimmedLine.split('|').map(s => s.trim());
+                            return text && url ? { text, url } : null;
+                          }
+                          
+                          // If line is just a URL, use URL as both text and url
+                          try {
+                            const url = new URL(trimmedLine);
+                            // Use hostname as text if no text provided
+                            return { text: url.hostname, url: url.href };
+                          } catch {
+                            return null;
+                          }
                         })
                         .filter(Boolean);
                       setQuestionForm({...questionForm, links});

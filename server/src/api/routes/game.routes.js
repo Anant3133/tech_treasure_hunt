@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/progress', protect, getTeamProgress);
 router.get('/team', protect, getTeamInfo);
-router.post('/question/:questionNumber', protect, getQuestion);
+router.get('/question/:questionNumber', protect, getQuestion);
 router.post('/submit-answer', protect, submitAnswerValidations, submitAnswer);
 
 module.exports = router;

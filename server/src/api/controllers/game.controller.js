@@ -34,7 +34,12 @@ async function getQuestionController(req, res) {
     questionCache.set(String(questionNumber), question);
   }
   console.log(`[getQuestion] Returning Q${questionNumber} to team ${team.teamName}`);
-  return res.json({ questionNumber: question.questionNumber, text: question.text });
+  return res.json({ 
+    questionNumber: question.questionNumber, 
+    text: question.text,
+    links: question.links,
+    imageUrl: question.imageUrl 
+  });
 }
 
 const submitAnswerValidations = [
