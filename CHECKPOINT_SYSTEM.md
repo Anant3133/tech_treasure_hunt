@@ -1,6 +1,6 @@
 # Checkpoint System Implementation - Summary
 
-## Overview
+## Overview!
 Implemented a comprehensive checkpoint system for the Tech Treasure Hunt game with the following features:
 - 3 checkpoints after Q4, Q8, and Q12
 - Teams return to start location and scan checkpoint QR codes
