@@ -110,6 +110,7 @@ export default function AdminPanel() {
       seen.add(Number(q.questionNumber));
       return true;
     });
+    console.log(deduped)
   setQuestions(deduped);
       setTeams(teamsRes.data);
       setLeaderboard(leaderboardRes.data);
@@ -923,12 +924,12 @@ export default function AdminPanel() {
                             {q.links.map((link, linkIdx) => (
                               <a
                                 key={linkIdx}
-                                href={link.url}
+                                href={link}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="block text-blue-300 hover:text-blue-200 text-sm underline"
                               >
-                                🔗 {link.text}
+                                🔗 {link}
                               </a>
                             ))}
                           </div>
