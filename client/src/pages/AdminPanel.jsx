@@ -769,7 +769,41 @@ export default function AdminPanel() {
                   <input
                     type="number"
                     value={questionForm.questionNumber}
-                    onChange={(e) => setQuestionForm({...questionForm, questionNumber: e.target.value})}
+                    onChange={(e) => {
+    const num = e.target.value;
+    setQuestionForm({ ...questionForm, questionNumber: num });
+
+    // Check if a question with this number exists
+    const existing = questions.find(q => String(q.questionNumber) === String(num));
+    if (existing) {
+      // Pre-fill the form with existing data
+      console.log("foudn existing",existing)
+      console.log(existing.links)
+      setQuestionForm({
+        questionNumber: existing.questionNumber,
+        text: existing.text || '',
+        answer: existing.answer || '',
+        hint: existing.hint || '',
+        imageUrl: existing.imageUrl || '',
+        links: existing.links || [],
+      });
+
+      // Reconstruct the links textarea text
+      const linkText = (existing.links || []).join('\n');
+      setLinksRawText(linkText);
+    } else {
+      // Clear form if it's a new question number
+      setQuestionForm({
+        questionNumber: num,
+        text: '',
+        answer: '',
+        hint: '',
+        imageUrl: '',
+        links: [],
+      });
+      setLinksRawText('');
+    }
+  }}
                     placeholder="Question Number"
                     className="bg-slate-700 border border-slate-600 px-4 py-3 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
