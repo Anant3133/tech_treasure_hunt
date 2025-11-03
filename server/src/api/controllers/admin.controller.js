@@ -45,6 +45,7 @@ const getQRImageValidations = [
 // -------------------- CONTROLLERS --------------------
 async function upsertQuestion(req, res) {
   console.log('[upsertQuestion] body:', req.body);
+  console.log("hello world")
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     console.log('[upsertQuestion] validation errors:', errors.array());

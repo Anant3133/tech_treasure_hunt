@@ -194,12 +194,12 @@ export default function Game() {
                 {question.links.map((link, idx) => (
                   <a
                     key={idx}
-                    href={link}
+                    href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block text-blue-400 hover:text-blue-300 underline transition-colors text-sm sm:text-base"
                   >
-                    → {link}
+                    → {link.text}
                   </a>
                 ))}
               </div>

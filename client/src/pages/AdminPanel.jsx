@@ -206,6 +206,7 @@ export default function AdminPanel() {
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     setQuestionError(null);
+    console.log("question form",questionForm)
     try {
       await api.post('/admin/questions', questionForm);
       setQuestionForm({ questionNumber: '', text: '', answer: '', hint: '', imageUrl: '', links: [] });
@@ -779,17 +780,26 @@ export default function AdminPanel() {
       // Pre-fill the form with existing data
       console.log("foudn existing",existing)
       console.log(existing.links)
+      let links=[]
+      if(existing.links){
+           links = existing.links
+           
+      }  
+      
       setQuestionForm({
+        id:existing.id,
         questionNumber: existing.questionNumber,
         text: existing.text || '',
         answer: existing.answer || '',
         hint: existing.hint || '',
         imageUrl: existing.imageUrl || '',
-        links: existing.links || [],
+        links: links || [],
       });
 
       // Reconstruct the links textarea text
-      const linkText = (existing.links || []).join('\n');
+      const linkText = (existing.links || [])
+        .map(link => link.text && link.url ? `${link.text}|${link.url}` : link.url)
+        .join('\n');
       setLinksRawText(linkText);
     } else {
       // Clear form if it's a new question number
@@ -958,12 +968,12 @@ export default function AdminPanel() {
                             {q.links.map((link, linkIdx) => (
                               <a
                                 key={linkIdx}
-                                href={link}
+                                href={link.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="block text-blue-300 hover:text-blue-200 text-sm underline"
                               >
-                                🔗 {link}
+                                🔗 {link.text}
                               </a>
                             ))}
                           </div>
