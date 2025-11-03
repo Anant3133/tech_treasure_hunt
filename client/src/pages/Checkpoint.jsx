@@ -11,9 +11,10 @@ export default function Checkpoint({ checkpointNumber }) {
   const navigate = useNavigate();
   const [showScanner, setShowScanner] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [navigating, setNavigating] = useState(false);
 
   const handleQrScan = async (data) => {
-    if (scanning) return;
+    if (scanning || navigating) return;
     
     setScanning(true);
     try {
@@ -35,13 +36,23 @@ export default function Checkpoint({ checkpointNumber }) {
 
       const result = await scanCheckpoint(checkpointNumber);
       
-      toast.success(`Checkpoint ${checkpointNumber} scanned! Game paused - wait for admin to unpause.`);
+      // Prevent any further state updates
+      setNavigating(true);
       setShowScanner(false);
       
-      // Navigate to a waiting/paused screen
-      setTimeout(() => {
-        navigate('/game');
-      }, 2000);
+      // Check if this was the final checkpoint (checkpoint 3)
+      if (result.finished) {
+        toast.success('Final checkpoint scanned! Hunt completed!', { duration: 2000 });
+        
+        // Navigate to completion page immediately
+        navigate('/completion', { replace: true });
+      } else {
+        // Checkpoints 1 and 2 - game pauses, wait for admin
+        toast.success(`Checkpoint ${checkpointNumber} scanned! Game paused.`, { duration: 2000 });
+        
+        // Navigate back to game to show paused state immediately
+        navigate('/game', { replace: true });
+      }
       
     } catch (err) {
       console.error('Checkpoint scan error:', err);

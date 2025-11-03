@@ -74,28 +74,7 @@ async function submitAnswerController(req, res) {
   const nextQuestionNumber = currentQuestionNumber + 1;
   const now = admin.firestore.Timestamp.now();
 
-  // Get total question count to dynamically determine the last question
-  const totalQuestions = await getTotalQuestionCount();
-  
-  // Check if this is the last question (dynamically based on total questions in DB)
-  const isLastQuestion = currentQuestionNumber >= totalQuestions;
-  
-  if (isLastQuestion) {
-    // This was the final question - mark as finished
-    const updatedTeam = await updateTeamProgress(teamId, {
-      currentQuestion: currentQuestionNumber,
-      lastCorrectAnswerTimestamp: now,
-      finishTime: now,
-    });
-    return res.json({
-      correct: true,
-      finished: true,
-      nextHint: null,
-      currentQuestion: updatedTeam.currentQuestion,
-    });
-  }
-
-  // Check if this question triggers a checkpoint (Q4, Q8, Q12)
+  // Check if this question triggers a checkpoint FIRST (Q4, Q8, Q12)
   const checkpointQuestions = [4, 8, 12];
   const checkpointIndex = checkpointQuestions.indexOf(currentQuestionNumber);
   const isCheckpointQuestion = checkpointIndex !== -1;
@@ -114,6 +93,27 @@ async function submitAnswerController(req, res) {
       requiresCheckpoint: true,
       checkpointNumber: checkpointNumber,
       currentQuestion: currentQuestionNumber,
+    });
+  }
+
+  // Get total question count to dynamically determine the last question
+  const totalQuestions = await getTotalQuestionCount();
+  
+  // Check if this is the last question (dynamically based on total questions in DB)
+  const isLastQuestion = currentQuestionNumber >= totalQuestions;
+  
+  if (isLastQuestion) {
+    // This was the final question - mark as finished
+    const updatedTeam = await updateTeamProgress(teamId, {
+      currentQuestion: currentQuestionNumber,
+      lastCorrectAnswerTimestamp: now,
+      finishTime: now,
+    });
+    return res.json({
+      correct: true,
+      finished: true,
+      nextHint: null,
+      currentQuestion: updatedTeam.currentQuestion,
     });
   }
 

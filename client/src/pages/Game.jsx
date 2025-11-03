@@ -6,6 +6,7 @@ import NavLayout from '../components/NavLayout.jsx';
 import Footer from '../components/Footer.jsx';
 import Checkpoint from './Checkpoint.jsx';
 import { FaLightbulb, FaPaperPlane, FaQrcode, FaTimes, FaSpinner, FaPause } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 
 export default function Game() {
@@ -22,6 +23,79 @@ export default function Game() {
   const [canScan, setCanScan] = useState(false); // Only allow scanning after correct answer
   const [isPaused, setIsPaused] = useState(false);
   const [awaitingCheckpoint, setAwaitingCheckpoint] = useState(null);
+
+  // Screenshot and copy protection
+  useEffect(() => {
+    // Prevent screenshots (partial - works on some browsers)
+    const preventScreenshot = () => {
+      document.body.style.webkitUserSelect = 'none';
+      document.body.style.mozUserSelect = 'none';
+      document.body.style.msUserSelect = 'none';
+      document.body.style.userSelect = 'none';
+    };
+
+    // Detect screenshot attempts (keyboard shortcuts)
+    const handleKeyDown = (e) => {
+      // Windows: PrtScn, Alt+PrtScn, Win+Shift+S
+      // Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5
+      if (
+        e.key === 'PrintScreen' ||
+        (e.key === 'PrintScreen' && e.altKey) ||
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) ||
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && ['3', '4', '5'].includes(e.key))
+      ) {
+        e.preventDefault();
+        toast.error('Screenshots are not allowed during the hunt!');
+        return false;
+      }
+      
+      // Prevent Ctrl+C, Ctrl+A, Ctrl+X (copy/select/cut)
+      if ((e.ctrlKey || e.metaKey) && ['c', 'a', 'x', 'C', 'A', 'X'].includes(e.key)) {
+        e.preventDefault();
+        toast.error('Copying is not allowed during the hunt!');
+        return false;
+      }
+    };
+
+    // Prevent right-click context menu
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      toast.error('Right-click is disabled during the hunt!');
+      return false;
+    };
+
+    // Prevent copy event
+    const handleCopy = (e) => {
+      e.preventDefault();
+      toast.error('Copying is not allowed during the hunt!');
+      return false;
+    };
+
+    // Prevent text selection with mouse
+    const handleSelectStart = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Apply protections
+    preventScreenshot();
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('selectstart', handleSelectStart);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.body.style.webkitUserSelect = '';
+      document.body.style.mozUserSelect = '';
+      document.body.style.msUserSelect = '';
+      document.body.style.userSelect = '';
+    };
+  }, []);
 
   // Load team progress on mount
   useEffect(() => {
@@ -45,6 +119,28 @@ export default function Game() {
 
     loadTeamProgress();
   }, []);
+
+  // Poll for pause status when game is paused
+  useEffect(() => {
+    if (!isPaused) return;
+
+    const checkPauseStatus = async () => {
+      try {
+        const progress = await getTeamProgress();
+        if (!progress.isPaused) {
+          // Game has been unpaused - reload the page
+          window.location.reload();
+        }
+      } catch (e) {
+        console.error('Failed to check pause status:', e);
+      }
+    };
+
+    // Check every 3 seconds
+    const interval = setInterval(checkPauseStatus, 3000);
+
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   // Load question when currentQuestion changes
   useEffect(() => {
@@ -136,18 +232,19 @@ export default function Game() {
             <FaPause className="text-6xl text-yellow-400 mx-auto mb-6 animate-pulse" />
             <h1 className="text-3xl font-bold text-yellow-400 mb-4">Game Paused</h1>
             <p className="text-lg text-slate-300 mb-6">
-              Your game is currently paused. Please wait for the admin to unpause it.
+              Your game is currently paused. The page will automatically refresh when the admin unpauses your game.
             </p>
             <div className="bg-black/40 rounded-xl p-4 border border-yellow-500/30">
-              <p className="text-sm text-slate-400">
-                You can refresh this page to check if the game has been unpaused.
+              <p className="text-sm text-slate-400 flex items-center justify-center gap-2">
+                <span className="animate-pulse">●</span>
+                Checking status every 3 seconds...
               </p>
             </div>
             <button
               onClick={() => window.location.reload()}
               className="mt-6 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-500 hover:to-yellow-600 text-white font-bold py-3 px-6 rounded-xl transition-all"
             >
-              Refresh Status
+              Refresh Now
             </button>
           </div>
         </div>
@@ -160,7 +257,18 @@ export default function Game() {
       <main className="flex-grow pb-24">
       <NavLayout>
       <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
-  <div className="bg-black/70 backdrop-blur-md rounded-3xl shadow-[0_0_30px_#22ff8844] border border-green-400/30 p-6 sm:p-8 mb-6">
+  {/* Question Card with Copy Protection */}
+  <div 
+    className="bg-black/70 backdrop-blur-md rounded-3xl shadow-[0_0_30px_#22ff8844] border border-green-400/30 p-6 sm:p-8 mb-6 select-none"
+    style={{
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      MozUserSelect: 'none',
+      msUserSelect: 'none',
+      WebkitTouchCallout: 'none'
+    }}
+    onContextMenu={(e) => e.preventDefault()}
+  >
     <h2 className="text-3xl sm:text-4xl font-extrabold text-green-400 mb-6 text-center drop-shadow-[0_0_10px_#39ff14]">
             Question {question?.questionNumber || currentQuestion}
           </h2>
@@ -175,7 +283,8 @@ export default function Game() {
               <img 
                 src={question.imageUrl} 
                 alt="Question visual" 
-                className="max-w-full max-h-96 rounded-xl border-2 border-green-400/30 shadow-lg"
+                className="max-w-full max-h-96 rounded-xl border-2 border-green-400/30 shadow-lg pointer-events-none"
+                draggable="false"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   console.error('Failed to load image:', question.imageUrl);

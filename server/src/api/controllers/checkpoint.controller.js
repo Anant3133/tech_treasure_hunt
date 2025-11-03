@@ -25,11 +25,29 @@ async function scanCheckpoint(req, res) {
   const now = admin.firestore.Timestamp.now();
   const checkpointField = `checkpoint${checkpoint}Time`;
   
-  // Determine next question after checkpoint
+  // For checkpoint 3 (after Q12), this is the final checkpoint - mark as finished
+  if (checkpoint === 3) {
+    const updates = {
+      [checkpointField]: now,
+      awaitingCheckpoint: null,
+      isPaused: false, // No pause needed, game is finished
+      finishTime: now,
+    };
+
+    await updateTeamProgress(teamId, updates);
+
+    return res.json({
+      success: true,
+      message: 'Final checkpoint scanned! Hunt completed!',
+      finished: true,
+      paused: false,
+    });
+  }
+
+  // For checkpoints 1 and 2, determine next question
   const nextQuestionAfterCheckpoint = {
     1: 5,  // After Q4 checkpoint, go to Q5
     2: 9,  // After Q8 checkpoint, go to Q9
-    3: 13, // After Q12 checkpoint, go to Q13
   };
 
   const updates = {
@@ -73,8 +91,50 @@ async function unpauseTeam(req, res) {
   return res.json({ success: true, message: 'Team unpaused', teamId });
 }
 
+// Admin: Unpause all paused teams
+async function unpauseAllTeams(req, res) {
+  try {
+    const admin = require('firebase-admin');
+    const db = admin.firestore();
+    
+    // Find all paused teams
+    const teamsSnapshot = await db.collection('teams')
+      .where('isPaused', '==', true)
+      .get();
+
+    if (teamsSnapshot.empty) {
+      return res.json({ 
+        success: true, 
+        message: 'No paused teams found',
+        unpausedCount: 0 
+      });
+    }
+
+    // Batch update all paused teams
+    const batch = db.batch();
+    teamsSnapshot.docs.forEach(doc => {
+      batch.update(doc.ref, { isPaused: false });
+    });
+
+    await batch.commit();
+
+    return res.json({ 
+      success: true, 
+      message: `Unpaused ${teamsSnapshot.size} team(s)`,
+      unpausedCount: teamsSnapshot.size
+    });
+  } catch (error) {
+    console.error('Error unpausing all teams:', error);
+    return res.status(500).json({ 
+      message: 'Failed to unpause all teams',
+      error: error.message 
+    });
+  }
+}
+
 module.exports = {
   scanCheckpoint,
   pauseTeam,
   unpauseTeam,
+  unpauseAllTeams,
 };

@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
 import { getCurrentQrToken, bulkRegisterTeams } from '../api/admin';
-import { pauseTeam, unpauseTeam } from '../api/checkpoint';
+import { pauseTeam, unpauseTeam, unpauseAllTeams } from '../api/checkpoint';
 import api from '../api/http';
 import QRCode from 'react-qr-code';
 import { FaQrcode, FaQuestionCircle, FaUsers, FaUserPlus, FaTrophy, FaEdit, FaTrash, FaClock, FaCheckCircle, FaSpinner, FaSignOutAlt, FaMedal, FaFileUpload, FaDownload, FaPause, FaPlay } from 'react-icons/fa';
@@ -116,6 +116,25 @@ export default function AdminPanel() {
       setLeaderboard(leaderboardRes.data);
     } catch (error) {
       console.error('Failed to load admin data:', error);
+    }
+  };
+
+  // Separate fetch functions for individual data refresh
+  const fetchTeams = async () => {
+    try {
+      const response = await api.get('/admin/teams');
+      setTeams(response.data);
+    } catch (error) {
+      console.error('Failed to fetch teams:', error);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await api.get('/leaderboard');
+      setLeaderboard(response.data);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error);
     }
   };
 
@@ -478,7 +497,13 @@ export default function AdminPanel() {
     try {
       await pauseTeam(teamId);
       toast.success('Team paused successfully');
-      fetchTeams(); // Refresh team data
+      
+      // Immediately fetch fresh data for all tabs
+      await Promise.all([
+        fetchTeams(),
+        fetchLeaderboard()
+      ]);
+      
       // Update selected team if modal is open
       if (selectedTeam && selectedTeam.id === teamId) {
         const updated = teams.find(t => t.id === teamId);
@@ -496,7 +521,13 @@ export default function AdminPanel() {
     try {
       await unpauseTeam(teamId);
       toast.success('Team unpaused successfully');
-      fetchTeams(); // Refresh team data
+      
+      // Immediately fetch fresh data for all tabs
+      await Promise.all([
+        fetchTeams(),
+        fetchLeaderboard()
+      ]);
+      
       // Update selected team if modal is open
       if (selectedTeam && selectedTeam.id === teamId) {
         const updated = teams.find(t => t.id === teamId);
@@ -507,6 +538,30 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Failed to unpause team:', error);
       toast.error('Failed to unpause team');
+    }
+  };
+
+  const handleUnpauseAll = async () => {
+    try {
+      const result = await unpauseAllTeams();
+      toast.success(result.message || `Unpaused ${result.unpausedCount} team(s)`);
+      
+      // Immediately fetch fresh data for all tabs
+      await Promise.all([
+        fetchTeams(),
+        fetchLeaderboard()
+      ]);
+      
+      // Update selected team if modal is open and was paused
+      if (selectedTeam && selectedTeam.isPaused) {
+        const updated = teams.find(t => t.id === selectedTeam.id);
+        if (updated) {
+          setSelectedTeam({ ...updated, isPaused: false });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to unpause all teams:', error);
+      toast.error('Failed to unpause all teams');
     }
   };
 
@@ -998,7 +1053,16 @@ export default function AdminPanel() {
 
         {activeTab === 'teams' && (
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4">Team Management</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">Team Management</h2>
+              <button
+                onClick={handleUnpauseAll}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <FaPlay className="text-sm" />
+                Unpause All Teams
+              </button>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1013,7 +1077,14 @@ export default function AdminPanel() {
                 <tbody>
                   {teams.map(team => (
                     <tr key={team.id} className="border-b border-slate-700">
-                      <td className="py-3 px-4 text-white font-medium">{team.teamName}</td>
+                      <td className="py-3 px-4 text-white font-medium">
+                        {team.teamName}
+                        {team.isPaused && (
+                          <span className="ml-2 px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-400">
+                            Paused
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-slate-300">{team.currentQuestion || 1}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
