@@ -300,17 +300,24 @@ export default function Game() {
                 🔗 Reference Links:
               </h3>
               <div className="space-y-2">
-                {question.links.map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-blue-400 hover:text-blue-300 underline transition-colors text-sm sm:text-base"
-                  >
-                    → {link.text}
-                  </a>
-                ))}
+                {question.links.map((link, idx) => {
+                  // Handle both formats: string URLs and {text, url} objects
+                  const isString = typeof link === 'string';
+                  const url = isString ? link : link.url;
+                  const text = isString ? `Link ${idx + 1}` : link.text;
+                  
+                  return (
+                    <a
+                      key={idx}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-blue-400 hover:text-blue-300 underline transition-colors text-sm sm:text-base"
+                    >
+                      → {text}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
