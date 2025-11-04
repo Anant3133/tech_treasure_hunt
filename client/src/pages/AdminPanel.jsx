@@ -124,8 +124,10 @@ export default function AdminPanel() {
     try {
       const response = await api.get('/admin/teams');
       setTeams(response.data);
+      return response.data; // Return the fresh data
     } catch (error) {
       console.error('Failed to fetch teams:', error);
+      return null;
     }
   };
 
@@ -133,8 +135,10 @@ export default function AdminPanel() {
     try {
       const response = await api.get('/leaderboard');
       setLeaderboard(response.data);
+      return response.data; // Return the fresh data
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
+      return null;
     }
   };
 
@@ -499,14 +503,14 @@ export default function AdminPanel() {
       toast.success('Team paused successfully');
       
       // Immediately fetch fresh data for all tabs
-      await Promise.all([
+      const [freshTeams, freshLeaderboard] = await Promise.all([
         fetchTeams(),
         fetchLeaderboard()
       ]);
       
-      // Update selected team if modal is open
-      if (selectedTeam && selectedTeam.id === teamId) {
-        const updated = teams.find(t => t.id === teamId);
+      // Update selected team if modal is open using fresh data
+      if (selectedTeam && selectedTeam.id === teamId && freshTeams) {
+        const updated = freshTeams.find(t => t.id === teamId);
         if (updated) {
           setSelectedTeam({ ...updated, isPaused: true });
         }
@@ -523,16 +527,16 @@ export default function AdminPanel() {
       toast.success('Team unpaused successfully');
       
       // Immediately fetch fresh data for all tabs
-      await Promise.all([
+      const [freshTeams, freshLeaderboard] = await Promise.all([
         fetchTeams(),
         fetchLeaderboard()
       ]);
       
-      // Update selected team if modal is open
-      if (selectedTeam && selectedTeam.id === teamId) {
-        const updated = teams.find(t => t.id === teamId);
+      // Update selected team if modal is open using fresh data
+      if (selectedTeam && selectedTeam.id === teamId && freshTeams) {
+        const updated = freshTeams.find(t => t.id === teamId);
         if (updated) {
-          setSelectedTeam({ ...updated, isPaused: false });
+          setSelectedTeam(updated);
         }
       }
     } catch (error) {
@@ -547,16 +551,16 @@ export default function AdminPanel() {
       toast.success(result.message || `Unpaused ${result.unpausedCount} team(s)`);
       
       // Immediately fetch fresh data for all tabs
-      await Promise.all([
+      const [freshTeams, freshLeaderboard] = await Promise.all([
         fetchTeams(),
         fetchLeaderboard()
       ]);
       
-      // Update selected team if modal is open and was paused
-      if (selectedTeam && selectedTeam.isPaused) {
-        const updated = teams.find(t => t.id === selectedTeam.id);
+      // Update selected team if modal is open and was paused using fresh data
+      if (selectedTeam && selectedTeam.isPaused && freshTeams) {
+        const updated = freshTeams.find(t => t.id === selectedTeam.id);
         if (updated) {
-          setSelectedTeam({ ...updated, isPaused: false });
+          setSelectedTeam(updated);
         }
       }
     } catch (error) {
