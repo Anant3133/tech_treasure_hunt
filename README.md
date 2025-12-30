@@ -51,43 +51,6 @@ The repo contains two main folders:
 
 ---
 
-## Repo structure (top-level)
-
-```
-ADMIN_GUIDE.md
-client/
-  package.json
-  src/
-    App.jsx
-    pages/
-      Home.jsx
-      StartGame.jsx
-      Game.jsx
-      Leaderboard.jsx
-      Admin.jsx
-    components/
-      NavLayout.jsx
-      QRScanner.jsx
-    public/
-      devcommlogo.png
-server/
-  package.json
-  server.js
-  src/
-    app.js
-    config/
-      firebase.js
-    api/
-      controllers/
-      routes/
-      services/
-  scripts/
-    seed-questions.js
-    questions.sample.json
-```
-
----
-
 ## Prerequisites
 
 - Node.js 18+ (or a current supported LTS)
@@ -183,28 +146,6 @@ VITE_API_BASE_URL=http://localhost:3001/api
 
 ---
 
-## Seeding the database (questions)
-
-A seeding script is provided to populate question data.
-
-From server folder:
-
-```powershell
-cd server
-node scripts/seed-questions.js scripts/questions.sample.json
-```
-
-Alternatively package script:
-
-```powershell
-npm run seed:questions
-# (depending on package.json this may run the sample script)
-```
-
-Check `server/scripts/` for `questions.sample.json` and the seeder.
-
----
-
 ## API reference (overview)
 
 All endpoints are prefixed with `/api` (client default). Key routes:
@@ -245,41 +186,6 @@ Note: check `server/src/api/routes` for the full list.
 
 ---
 
-## Troubleshooting
-
-### Hyperspeed / WebGL rendering black screen on mobile
-
-Symptoms:
-- The background renders black or doesn't initialize on mobile or certain browsers.
-- Browser console warning: `WARNING: Too many active WebGL contexts. Oldest context will be lost.`
-
-Causes & fixes:
-- The Hyperspeed Three.js app can initialize before the container has an effective size (e.g., when layout libraries like locomotive-scroll are still setting up). This can create zero-sized canvas or multiple contexts.
-- Fixes in this repo:
-  - We added a robust initialization routine in `client/src/Hyperspeed.jsx` that:
-    - Waits for the container to have non-zero width/height (uses `ResizeObserver`).
-    - Retries when the document becomes visible or on the first touch (some mobile browsers need user interaction to allow certain features).
-    - Logs initialization steps to console to help debugging (`Hyperspeed: initializing with size ...`, `Hyperspeed: assets loaded, calling init`, `Hyperspeed: initialized`, `Hyperspeed: disposing appRef`).
-    - Ensures cleanup (disposing previous WebGL contexts) on unmount.
-- If you still see many contexts:
-  - Make sure pages that show Hyperspeed unmount it when navigating away.
-  - Limit Hyperspeed on low-end devices (as a fallback, remove or comment out the `<Hyperspeed />` mount in `Home.jsx` or gate it by a `VITE_DISABLE_HYPERSPEED` env flag).
-  - Use the console logs added to `Hyperspeed.jsx` to confirm when/where contexts are created.
-
-### 404 when calling `/api/game/team` (deployed)
-
-Symptom:
-- Client console shows `GET /api/game/team 404` and the Start Game panel falls back to showing JWT teamName.
-
-Cause:
-- The deployed backend may not have the latest routes deployed (the `GET /api/game/team` route is implemented in `server/src/api/routes/game.routes.js` and the controller in `server/src/api/controllers/game.controller.js`).
-- If the server doesn't have that file/route, it returns 404.
-
-Fix:
-- Redeploy server with latest code changes.
-- Check server logs to confirm route is registered and requests are reaching the server.
-- On the client, we fall back to the JWT `user.teamName` to ensure the team name still appears even if the endpoint fails.
-
 ### Authentication / token issues
 
 - If frontend receives 401 responses, the Axios interceptor automatically removes `auth_token` from localStorage.
@@ -310,10 +216,7 @@ Fix:
 
 ## Tests
 
-No automated tests included. Consider adding:
-- Unit tests for server controllers (jest / supertest)
-- End-to-end tests for the frontend flow (Cypress / Playwright)
-
+No automated tests included.
 ---
 
 ## Contributing
