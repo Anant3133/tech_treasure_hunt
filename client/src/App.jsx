@@ -10,6 +10,7 @@ import Login from './pages/Login.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
 import Maps from './pages/Maps.jsx'
+import ShowcasePanel from './components/ShowcasePanel.jsx'
 import { logout } from './api/auth'
 import api from './api/http'
 import { decodeJWT } from './api/utils'
@@ -145,7 +146,7 @@ function RequireAuth({ children }) {
 }
 
 function RedirectIfAuthenticated({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -159,6 +160,9 @@ function RedirectIfAuthenticated({ children }) {
   }
 
   if (isAuthenticated) {
+    if (user?.role === 'admin') {
+      return <Navigate to="/admin-panel" replace />;
+    }
     return <Navigate to="/start-game" replace />;
   }
 
@@ -190,6 +194,7 @@ export default function App() {
             <Route path="*" element={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Page not found</div>} />
           </Routes>
         </Layout>
+        <ShowcasePanel />
       </AuthProvider>
     </BrowserRouter>
   );

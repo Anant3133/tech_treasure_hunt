@@ -148,6 +148,7 @@ async function getTeamProgressController(req, res) {
     hasStarted: (team.currentQuestion || 1) > 1 || team.lastCorrectAnswerTimestamp !== null,
     isPaused: team.isPaused || false,
     awaitingCheckpoint: team.awaitingCheckpoint || null,
+    awaitingQrScanForQuestion: team.awaitingQrScanForQuestion || null,
   });
 }
 

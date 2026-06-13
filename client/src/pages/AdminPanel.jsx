@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
+import Lightfall from '../components/Lightfall.jsx';
 import { login, register } from '../api/auth';
 import { useAuth } from '../App.jsx';
 import { getCurrentQrToken, bulkRegisterTeams } from '../api/admin';
@@ -18,7 +20,7 @@ export default function AdminPanel() {
   const [password, setPassword] = useState('');
   const [adminInviteKey, setAdminInviteKey] = useState('');
   const [authError, setAuthError] = useState(null);
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, logout: authLogout } = useAuth();
   
   // Admin panel state
   const [activeTab, setActiveTab] = useState('qr');
@@ -177,6 +179,7 @@ export default function AdminPanel() {
     setTeamName('');
     setPassword('');
     setAdminInviteKey('');
+    authLogout(); // Clear global AuthContext to sync Showcase Controls and prevent redirect loops
   };
 
   // QR Code functionality
@@ -637,9 +640,30 @@ export default function AdminPanel() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-slate-800 p-8 rounded-lg shadow-xl border border-slate-700">
-          <h1 className="text-3xl font-bold text-white text-center mb-8">
+      <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+        {/* 🌌 Lightfall Animated Background */}
+        <div className="absolute inset-0 -z-10 w-full h-full">
+          <Lightfall
+            colors={['#A6C8FF', '#5227FF', '#FF9FFC']}
+            backgroundColor="#050a26"
+            speed={0.5}
+            streakCount={2}
+            streakWidth={1}
+            streakLength={1}
+            glow={1}
+            density={0.6}
+            twinkle={1}
+            zoom={3}
+            backgroundGlow={0.5}
+            opacity={1}
+            mouseInteraction
+            mouseStrength={0.5}
+            mouseRadius={1}
+          />
+        </div>
+
+        <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-md p-8 rounded-2xl shadow-[0_0_40px_rgba(82,39,255,0.25)] border border-slate-800/80">
+          <h1 className="text-3xl font-bold text-white text-center mb-8 drop-shadow-md">
             🔧 Admin Panel
           </h1>
           
@@ -687,6 +711,13 @@ export default function AdminPanel() {
           >
             {authMode === 'login' ? 'Need to register as admin?' : 'Already have admin account?'}
           </button>
+
+          <Link
+            to="/"
+            className="mt-4 block text-center text-sm text-slate-400 hover:text-slate-200 hover:underline transition-colors"
+          >
+            ← Go to Home Page
+          </Link>
           
           {authError && (
             <p className="mt-4 text-sm text-red-400 text-center bg-red-900/20 p-3 rounded-lg border border-red-800">

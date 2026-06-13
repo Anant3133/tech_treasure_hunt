@@ -7,10 +7,12 @@ import Footer from '../components/Footer.jsx';
 import Checkpoint from './Checkpoint.jsx';
 import { FaLightbulb, FaPaperPlane, FaQrcode, FaTimes, FaSpinner, FaPause } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useAuth } from '../App.jsx';
 
 
 export default function Game() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [question, setQuestion] = useState(null);
   const [answer, setAnswer] = useState('');
@@ -26,6 +28,12 @@ export default function Game() {
 
   // Screenshot and copy protection
   useEffect(() => {
+    const isDemo = user?.teamName?.toLowerCase().includes('demo') || user?.teamName?.toLowerCase().includes('visitor');
+    if (isDemo) {
+      console.log('[Game] Demo/Visitor team detected - bypassing copy & right-click restrictions.');
+      return;
+    }
+
     // Prevent screenshots (partial - works on some browsers)
     const preventScreenshot = () => {
       document.body.style.webkitUserSelect = 'none';

@@ -218,6 +218,10 @@ export default function Home() {
               required
             />
 
+            <p className="text-white/80 text-[11px] sm:text-xs text-center py-0.5 px-1 font-medium tracking-wide leading-relaxed italic">
+              "If you want to go through a demo click on showcase right on bottom right"
+            </p>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
